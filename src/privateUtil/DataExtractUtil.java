@@ -1,11 +1,3 @@
-/*
- * 文件名：DataExtractUtil.java
- * 版权：Copyright 2007-2016 zxiaofan.com. Co. Ltd. All Rights Reserved. 
- * 描述： DataExtractUtil.java
- * 修改人：yunhai
- * 修改时间：2016年7月4日
- * 修改内容：新增
- */
 package privateUtil;
 
 import java.io.File;
@@ -19,6 +11,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.jsoup.Connection;
 import org.jsoup.Connection.Method;
@@ -32,30 +28,35 @@ import com.google.gson.Gson;
 /**
  * 需引入Jsoup和Gson包
  * 
- * 持续更新地址：https://github.com/zxiaofan/JDK-Study/tree/master/src/utils
+ * 持续更新地址：https://github.com/zxiaofan/JavaUtils
  * 
- * @author yunhai
+ * @author zxiaofan
  */
 public class DataExtractUtil {
     private static String databaseName = "ComptPriceOrderOperLog"; // 基础数据库名
 
     private static String tableNameBasic = "OrderOperLog"; // 基础表名
 
-    private static String timeStart = "20160601"; // 按年分表只需填写年份,按天分表需年月日格式
+    private static String timeStart = "20160816"; // 按年分表只需填写年份,按天分表需年月日格式
 
-    private static String timeEnd = "20160630";
+    private static String timeEnd = "20160817";
 
     private static int timeout = 9000; // 超时设置
 
-    // sql中的所有表名请用dynamicTableName代替
-    private static String sql = "sql";
+    private static int autoChangeTableName = 1; // 自动更换基础表名tableName模式（1自动，2手动）
+
+    // sql中的所有表名请用dynamicTableName代替(手动模式)
+    private static String sql = "SELECT A1,A2 FROM OrderOperLog20160816 WHERE A8 LIKE '%供应资源换编码失败%有外放舱位%' AND A1 in (SELECT DISTINCT A1 FROM OrderOperLog WHERE A8 like '%新供应商：内部采购%' AND A1 in(SELECT A1 FROM OrderOperLog WHERE A8 like '%同定同出外放无舱位%' OR A8 LIKE '%订单没有换编码—zd%' OR A8 LIKE '%换编码外放无舱位%' OR PNRContent like '%同定同出外放无舱位%' OR PNRContent like '%订单没有换编码—zd%' OR PNRContent like '%换编码外放无舱位%'));";
 
     public static void main(String[] args) throws Exception {
         DataExtractUtil.start();
     }
 
     public static void start() throws Exception {
-        System.out.println("sql中的所有表名请用dynamicTableName代替");
+        if (2 == autoChangeTableName) {
+            System.out.println("sql中的所有表名请用dynamicTableName代替");
+        }
+        System.out.println("数据提取ing...");
         List<String> tableList = getAllTableName(timeStart, timeEnd);
         createFile(pathSave);
         StringBuffer allData = new StringBuffer();
@@ -63,6 +64,10 @@ public class DataExtractUtil {
             querySave(tableName, allData);
         }
         fileSave(allData.toString(), pathSave + tableNameBasic + timeStart + "-" + timeEnd + ".txt");
+        System.out.println("数据提取End...");
+        if (!listErrTable.isEmpty()) {
+            System.out.println("以下数据表未能成功提取：" + listErrTable.toString());
+        }
         openFolder(pathSave);
     }
 
@@ -124,13 +129,28 @@ public class DataExtractUtil {
         String querySql = sql;
         queryVo vo = new queryVo();
         vo.setDatabaseName(databaseName);
-        querySql = querySql.replaceAll("dynamicTableName", tableName);
+        if (2 == autoChangeTableName) { // 手动模式
+            querySql = querySql.replaceAll("dynamicTableName", tableName);
+        } else if (1 == autoChangeTableName) { // 自动更换基础表名
+            String regex = "\\s[fromFROM]{4}\\s" + tableNameBasic + "[0-9\\-_]*?\\s";
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(querySql);
+            while (matcher.find()) {
+                querySql = matcher.replaceAll(" FROM " + tableName + " ");
+            }
+        }
         // querySql.replaceAll("(\r\n|\r|\n|\n\r)", "<br>");
         querySql.replaceAll("\\u0027", "'");
         vo.setSql(querySql);
         queryMap.put("data", gson.toJson(vo));
         Document doc = jsoupDoc(url, queryMap, Method.POST);
         Map<String, String> map = gson.fromJson(doc.text(), Map.class);
+        if ("2".equals(map.get("code"))) {
+            System.out.println(tableName + "_异常");
+            System.out.println(map.get("msg"));
+            listErrTable.add(tableName);
+            return;
+        }
         Document docRes = jsoupDoc(referer + map.get("msg"), queryMap, Method.GET);
         String result = keepLineBreak(docRes);
         allData.append(result);
@@ -182,6 +202,7 @@ public class DataExtractUtil {
             out = new OutputStreamWriter(new FileOutputStream(file), "UTF-8");
             out.append(param);
             out.close();
+            System.out.println("success: " + path.substring(path.lastIndexOf("\\") + 1, path.lastIndexOf(".")));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -221,6 +242,10 @@ public class DataExtractUtil {
     private static SimpleDateFormat formatM = new SimpleDateFormat("yyyyMM");
 
     private static SimpleDateFormat formatd = new SimpleDateFormat("yyyyMMdd");
+
+    private static List<String> listErrTable = new ArrayList<>(); // 为提取到数据的表
+
+    private static ExecutorService service = Executors.newFixedThreadPool(10);
 
     // private static Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create(); // 保留特殊字符
     private static Gson gson = new Gson();
