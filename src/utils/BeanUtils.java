@@ -53,7 +53,7 @@ public class BeanUtils {
      * @param coverLevel
      *            覆盖级别： 1:source_field != null; 2:source_field != null (&& !"".equals(source_field)); 3:target_field==null; 4:target_field==null(|| "".equals(target_field)); others:fullDeepCopy。
      */
-    public static void copyLevel(Object source, Object target, int coverLevel) {
+    public static void copy(Object source, Object target, int coverLevel) {
         Field[] fields = source.getClass().getDeclaredFields();
         for (int i = 0, j = fields.length; i < j; i++) {
             String propertyName = fields[i].getName();
