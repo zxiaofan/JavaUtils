@@ -39,9 +39,9 @@ public class DataExtractUtil {
 
     static String tableNameBasic = "OrderOperLog"; // 基础表名
 
-    private static String timeStart = "20160801"; // 按年分表只需填写年份,按天分表需年月日格式
+    private static String timeStart = "20160901"; // 按年分表只需填写年份,按天分表需年月日格式
 
-    private static String timeEnd = "20160831";
+    private static String timeEnd = "20160930";
 
     static int timeout = 9000; // 超时设置
 
@@ -64,6 +64,7 @@ public class DataExtractUtil {
         createFile(pathSave);
         for (String tableName : tableList) {
             service.submit(new queryDataThread(tableName));
+            Thread.sleep(100);
             // querySave(tableName, allData);
         }
         service.shutdown();
@@ -335,6 +336,23 @@ class queryDataThread implements Runnable {
     }
 
     private static Document jsoupDoc(String url, Map<String, String> map, Method method) throws Exception {
+        Connection connection = initConnect(url, method);
+        Response doc = null;
+        try {
+            doc = connection.ignoreContentType(true).method(method).data(map).execute();
+        } catch (IOException e) {
+            Thread.sleep(3000);
+            try {
+                connection = initConnect(url, method);
+            } catch (Exception e1) {
+                System.err.println(url);
+            }
+            // e.printStackTrace();
+        } // 获取返回的html的document对象
+        return doc.parse();
+    }
+
+    public static Connection initConnect(String url, Method method) throws IOException {
         Connection connection = Jsoup.connect(url);
         connection.timeout(DataExtractUtil.timeout); // 设置连接超时时间
         // 给服务器发消息头，告诉服务器，俺不是java程序。
@@ -343,18 +361,11 @@ class queryDataThread implements Runnable {
         connection.header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
         connection.header("Host", "172.16.7.21:4385");
         connection.header("Accept-Encoding", "gzip, deflate");
-        Response doc = null;
-        try {
-            if (Method.POST.equals(method)) {
-                connection.post();
-            } else {
-                connection.get();
-            }
-            doc = connection.ignoreContentType(true).method(method).data(map).execute();
-        } catch (IOException e) {
-            System.err.println(url);
-            // e.printStackTrace();
-        } // 获取返回的html的document对象
-        return doc.parse();
+        if (Method.POST.equals(method)) {
+            connection.post();
+        } else {
+            connection.get();
+        }
+        return connection;
     }
 }
