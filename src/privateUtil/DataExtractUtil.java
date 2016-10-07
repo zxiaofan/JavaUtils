@@ -35,15 +35,17 @@ import com.google.gson.Gson;
  * @author zxiaofan
  */
 public class DataExtractUtil {
-    static String databaseName = "ComptPriceOrderOperLog"; // 基础数据库名
+    static String databaseName = "HotelBaseDataDB"; // 基础数据库名
 
-    static String tableNameBasic = "OrderOperLog"; // 基础表名
+    static String tableNameBasic = "HotelRoomCN"; // 基础表名
 
-    private static String timeStart = "20160801"; // 按年分表只需填写年份,按天分表需年月日格式
+    private static String timeStart = "1"; // 按年分表只需填写年份,按天分表需年月日格式
 
-    private static String timeEnd = "20160831";
+    private static String timeEnd = "52";
 
-    static int timeout = 9000; // 超时设置
+    private static int subStyle = 1; // 分表规则(1：hash,0：时间分表)
+
+    static int timeout = 99000; // 超时设置
 
     static int autoChangeTableName = 1; // 自动更换基础表名tableName模式（1自动，2手动）
 
@@ -56,7 +58,7 @@ public class DataExtractUtil {
 
     public static void start() throws Exception {
         if (2 == autoChangeTableName) {
-            System.out.println("sql中的所有表名请用dynamicTableName代替");
+            System.out.println("sql中所有动态变化的表名请用dynamicTableName代替");
         }
         System.out.println("数据提取ing...");
         pathSave = pathSave + formatd.format(new Date()) + "\\";
@@ -64,6 +66,7 @@ public class DataExtractUtil {
         createFile(pathSave);
         for (String tableName : tableList) {
             service.submit(new queryDataThread(tableName));
+            Thread.sleep(500);
             // querySave(tableName, allData);
         }
         service.shutdown();
@@ -122,15 +125,24 @@ public class DataExtractUtil {
             calendarAdd = Calendar.DATE;
         }
         List<String> tableList = new ArrayList<>();
-        Date date1 = format.parse(timeStart2);
-        Date date2 = format.parse(timeEnd2);
-        Calendar calendar1 = Calendar.getInstance();
-        calendar1.setTime(date1);
-        Calendar calendar2 = Calendar.getInstance();
-        calendar2.setTime(date2);
-        while (!calendar1.after(calendar2)) {
-            tableList.add(tableNameBasic + format.format(calendar1.getTime()));
-            calendar1.add(calendarAdd, 1);
+        if (subStyle == 1) {
+            int hash1 = Integer.valueOf(timeStart2);
+            int hash2 = Integer.valueOf(timeEnd2);
+            while (hash1 <= hash2) {
+                tableList.add(tableNameBasic + hash1);
+                hash1++;
+            }
+        } else {
+            Date date1 = format.parse(timeStart2);
+            Date date2 = format.parse(timeEnd2);
+            Calendar calendar1 = Calendar.getInstance();
+            calendar1.setTime(date1);
+            Calendar calendar2 = Calendar.getInstance();
+            calendar2.setTime(date2);
+            while (!calendar1.after(calendar2)) {
+                tableList.add(tableNameBasic + format.format(calendar1.getTime()));
+                calendar1.add(calendarAdd, 1);
+            }
         }
         return tableList;
     }
@@ -296,6 +308,7 @@ class queryDataThread implements Runnable {
      */
     @Override
     public void run() {
+        Gson gson = new Gson();
         Map<String, String> queryMap = new HashMap<String, String>();
         String querySql = DataExtractUtil.sql;
         queryVo vo = new queryVo();
@@ -313,11 +326,11 @@ class queryDataThread implements Runnable {
         // querySql.replaceAll("(\r\n|\r|\n|\n\r)", "<br>");
         querySql.replaceAll("\\u0027", "'");
         vo.setSql(querySql);
-        queryMap.put("data", DataExtractUtil.gson.toJson(vo));
+        queryMap.put("data", gson.toJson(vo));
         Document doc;
         try {
             doc = jsoupDoc(DataExtractUtil.url, queryMap, Method.POST);
-            Map<String, String> map = DataExtractUtil.gson.fromJson(doc.text(), Map.class);
+            Map<String, String> map = gson.fromJson(doc.text(), Map.class);
             if ("2".equals(map.get("code"))) {
                 System.out.println(tableName + "_异常");
                 // System.out.println(map.get("msg"));
@@ -330,11 +343,39 @@ class queryDataThread implements Runnable {
             DataExtractUtil.mapAllData.put(tableName, result);
             DataExtractUtil.fileSave(result, DataExtractUtil.pathSave + tableName + ".txt");
         } catch (Exception e) {
+            DataExtractUtil.listErrTable.add(tableName);
             e.printStackTrace();
         }
     }
 
     private static Document jsoupDoc(String url, Map<String, String> map, Method method) throws Exception {
+        Connection connection = initConnect(url, method);
+        Response doc = null;
+        try {
+            connection.ignoreContentType(true).method(method).data(map).execute();
+        } catch (Exception e) { // Read timed out
+            Thread.sleep(3000);
+            connection = initConnect(url, method);
+            try {
+                doc = connection.ignoreContentType(true).method(method).data(map).execute();
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            }
+        }
+        // 获取返回的html的document对象
+        if (null == doc) {
+            Thread.sleep(3000);
+            connection = initConnect(url, method);
+            try {
+                doc = connection.ignoreContentType(true).method(method).data(map).execute();
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            }
+        }
+        return doc.parse();
+    }
+
+    public static Connection initConnect(String url, Method method) throws IOException {
         Connection connection = Jsoup.connect(url);
         connection.timeout(DataExtractUtil.timeout); // 设置连接超时时间
         // 给服务器发消息头，告诉服务器，俺不是java程序。
@@ -343,18 +384,11 @@ class queryDataThread implements Runnable {
         connection.header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
         connection.header("Host", "172.16.7.21:4385");
         connection.header("Accept-Encoding", "gzip, deflate");
-        Response doc = null;
-        try {
-            if (Method.POST.equals(method)) {
-                connection.post();
-            } else {
-                connection.get();
-            }
-            doc = connection.ignoreContentType(true).method(method).data(map).execute();
-        } catch (IOException e) {
-            System.err.println(url);
-            // e.printStackTrace();
-        } // 获取返回的html的document对象
-        return doc.parse();
+        if (Method.POST.equals(method)) {
+            connection.post();
+        } else {
+            connection.get();
+        }
+        return connection;
     }
 }
