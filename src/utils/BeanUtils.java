@@ -87,6 +87,32 @@ public class BeanUtils {
     }
 
     /**
+     * 为特定属性赋值.
+     * 
+     * @param bean
+     *            bean
+     * @param fieldName
+     *            fieldName
+     * @param value
+     *            value
+     * @return boolean
+     */
+    public static boolean setValue(Object bean, String fieldName, Object value) {
+        Class clazz = bean.getClass();
+        Field field = null;
+        try {
+            field = clazz.getDeclaredField(fieldName);
+            Method method;
+            method = clazz.getDeclaredMethod(getSetterName(field.getName()), new Class[]{field.getType()});
+            method.invoke(bean, new Object[]{value});
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * 根据属性名取值
      * 
      * @param bean
