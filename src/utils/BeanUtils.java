@@ -10,6 +10,9 @@ package utils;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.Date;
 
 /**
  * github.zxiaofan.com
@@ -87,32 +90,6 @@ public class BeanUtils {
     }
 
     /**
-     * 为特定属性赋值.
-     * 
-     * @param bean
-     *            bean
-     * @param fieldName
-     *            fieldName
-     * @param value
-     *            value
-     * @return boolean
-     */
-    public static boolean setValue(Object bean, String fieldName, Object value) {
-        Class clazz = bean.getClass();
-        Field field = null;
-        try {
-            field = clazz.getDeclaredField(fieldName);
-            Method method;
-            method = clazz.getDeclaredMethod(getSetterName(field.getName()), new Class[]{field.getType()});
-            method.invoke(bean, new Object[]{value});
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
-    }
-
-    /**
      * 根据属性名取值
      * 
      * @param bean
@@ -121,7 +98,7 @@ public class BeanUtils {
      *            属性名
      * @return value
      */
-    private static Object getProperty(Object bean, String propertyName) {
+    public static Object getProperty(Object bean, String propertyName) {
         Class clazz = bean.getClass();
         Field field = null;
         try {
@@ -151,7 +128,7 @@ public class BeanUtils {
      * @param value
      *            值
      */
-    private static void setProperty(Object bean, String propertyName, Object value) {
+    public static void setProperty(Object bean, String propertyName, Object value) {
         Class clazz = bean.getClass();
         Field field = null;
         try {
@@ -222,4 +199,97 @@ public class BeanUtils {
         return false;
     }
 
+    /**
+     * 为对象属性null值赋初始值，常用于插库前处理对象.
+     * 
+     * @param obj
+     *            obj
+     */
+    public static void notNull(Object obj) {
+        try {
+            if (null == obj) {
+                return;
+            }
+            Field[] fields = obj.getClass().getDeclaredFields();
+            Class cla = obj.getClass();
+            for (Field field : fields) {
+                field.setAccessible(true);
+                if (null == field.get(obj)) {
+                    setFieldValue(obj, cla, field);
+                }
+                field.setAccessible(false);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void setFieldValue(Object obj, Class cla, Field field) throws Exception {
+        // NoSuchMethodException, IllegalAccessException, InvocationTargetException
+        Class type = field.getType();
+        String fieldName = field.getName();
+        String methodName = "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+        Method method;
+        if (String.class.equals(type)) {
+            method = cla.getMethod(methodName, String.class);
+            method.invoke(obj, "");
+        } else if (char.class.equals(type)) {
+            method = cla.getMethod(methodName, char.class);
+            method.invoke(obj, ' '); // ''编译报错Invalid character constant
+        } else if (Character.class.equals(type)) {
+            method = cla.getMethod(methodName, Character.class);
+            method.invoke(obj, ' ');
+        } else if (boolean.class.equals(type)) {
+            method = cla.getMethod(methodName, boolean.class);
+            method.invoke(obj, true);
+        } else if (Boolean.class.equals(type)) {
+            method = cla.getMethod(methodName, Boolean.class);
+            method.invoke(obj, true);
+        } else if (byte.class.equals(type)) {
+            method = cla.getMethod(methodName, byte.class);
+            method.invoke(obj, (byte) 0);
+        } else if (Byte.class.equals(type)) {
+            method = cla.getMethod(methodName, Byte.class);
+            method.invoke(obj, (byte) 0);
+        } else if (short.class.equals(type)) {
+            method = cla.getMethod(methodName, short.class);
+            method.invoke(obj, (short) 0);
+        } else if (Short.class.equals(type)) {
+            method = cla.getMethod(methodName, Short.class);
+            method.invoke(obj, (short) 0);
+        } else if (int.class.equals(type)) {
+            method = cla.getMethod(methodName, int.class);
+            method.invoke(obj, 0);
+        } else if (Integer.class.equals(type)) {
+            method = cla.getMethod(methodName, Integer.class);
+            method.invoke(obj, 0);
+        } else if (long.class.equals(type)) {
+            method = cla.getMethod(methodName, long.class);
+            method.invoke(obj, 0);
+        } else if (Long.class.equals(type)) {
+            method = cla.getMethod(methodName, Long.class);
+            method.invoke(obj, 0L); // 大写L
+        } else if (float.class.equals(type)) {
+            method = cla.getMethod(methodName, float.class);
+            method.invoke(obj, 0.0f);
+        } else if (Float.class.equals(type)) {
+            method = cla.getMethod(methodName, Float.class);
+            method.invoke(obj, 0.0f);
+        } else if (double.class.equals(type)) {
+            method = cla.getMethod(methodName, double.class);
+            method.invoke(obj, 0.0d);
+        } else if (Double.class.equals(type)) {
+            method = cla.getMethod(methodName, Double.class);
+            method.invoke(obj, 0.0d);
+        } else if (Date.class.equals(type)) {
+            method = cla.getMethod(methodName, Date.class);
+            method.invoke(obj, new Date());
+        } else if (BigDecimal.class.equals(type)) {
+            method = cla.getMethod(methodName, BigDecimal.class);
+            method.invoke(obj, new BigDecimal(0.0D));
+        } else if (Timestamp.class.equals(type)) {
+            method = cla.getMethod(methodName, Timestamp.class);
+            method.invoke(obj, new Timestamp(System.currentTimeMillis()));
+        }
+    }
 }
