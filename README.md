@@ -19,7 +19,7 @@ By github.com/zxiaofan(https://github.com/zxiaofan/JavaUtils)
 　　java实体工具类：  
 　　4.1、针对源实体或目标实体分 5种copy级别。coverLevel覆盖级别： 1:source_field != null; 2:source_field != null (&&
 !"".equals(source_field)); 3:target_field==null; 4:target_field==null(||
-"".equals(target_field)); others:fullDeepCopy。
+"".equals(target_field)); others:fullDeepCopy。  
 　　4.2、获取特定属性值getProperty、为指定属性赋值setProperty  
 　　4.3、为null属性赋初始值notNull  
 **4、BeanUtils**  
