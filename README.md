@@ -24,6 +24,8 @@ By github.com/zxiaofan(https://github.com/zxiaofan/JavaUtils)
 　　4.3、为null属性赋初始值notNull  
 **4、BeanUtils**  
 　　多线程实现注入SpringContextUtil  
+**4、GsonUtil**  
+　　fromJson(String json, Class raw, Class actual);toJson避免String被转义;支持自定义时间格式  
 
 # passwordUtil
 2016-08-29（新增加解密工具类）  
