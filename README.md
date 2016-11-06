@@ -22,10 +22,14 @@ By github.com/zxiaofan(https://github.com/zxiaofan/JavaUtils)
 "".equals(target_field)); others:fullDeepCopy。  
 　　4.2、获取特定属性值getProperty、为指定属性赋值setProperty  
 　　4.3、为null属性赋初始值notNull  
-**4、BeanUtils**  
+**5、SpringContextUtil**  
 　　多线程实现注入SpringContextUtil  
-**4、GsonUtil**  
+**6、GsonUtil**  
 　　fromJson(String json, Class raw, Class actual);toJson避免String被转义;支持自定义时间格式  
+**7、DateUtil**  
+　　parseDate指定DateFormat格式化日期；dateToHms获取当前日期指定时间；getDateInterval比较两个日期的间隔；setDate保留日期到某一级别  
+**8、StringUtil**  
+　　isNullOrEmpty判空；Json、Xml首字母大转小、小转大；getInteger字符串转Integer  
 
 # passwordUtil
 2016-08-29（新增加解密工具类）  
