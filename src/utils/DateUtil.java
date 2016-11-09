@@ -28,65 +28,67 @@ public class DateUtil {
         throw new RuntimeException("this is a util class,can not instance!");
     }
 
-    private static DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static DateFormat format_Default = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    public static String format = "yyyy-MM-dd HH:mm:ss";
+
+    public static String format_yMd = "yyyy-MM-dd";
+
+    public static String format_yMdS = "yyyy-MM-dd HH:mm:ss.S";
+
+    public static String format_slash = "yyyy/MM/dd HH:mm:ss";
+
+    public static String format_yMdS_slash = "yyyy/MM/dd HH:mm:ss.S";
 
     /**
-     * 保留日期到某一级别（天、时、分、秒...）.
+     * 使用ThreadLocal解决SimpleDateFormat不同步问题.
+     */
+    private static ThreadLocal<DateFormat> threadLocal = new ThreadLocal<DateFormat>() {
+        @Override
+        protected DateFormat initialValue() {
+            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        }
+    };
+
+    public static String format(Date date) {
+        return threadLocal.get().format(date);
+    }
+
+    /**
+     * 指定格式格式化日期.
      * 
      * @param date
-     *            date
-     * @param calendarLevel
-     *            保留级别，null保留到day
-     * @return date
+     * @param dateFormat
+     * @return
      */
-    public static Date setDate(Date date, Integer calendarLevel) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-        if (null == calendarLevel || Calendar.DATE == calendarLevel) { // 保留到 Day
-            cal.set(Calendar.HOUR, 0);
-            cal.set(Calendar.MINUTE, 0);
-            cal.set(Calendar.SECOND, 0);
-        } else if (Calendar.HOUR == calendarLevel) { // 保留到 Hour
-            cal.set(Calendar.MINUTE, 0);
-            cal.set(Calendar.SECOND, 0);
-        } else if (Calendar.MINUTE == calendarLevel) { // 保留到 MINUTE
-            cal.set(Calendar.SECOND, 0);
-        } else if (Calendar.SECOND == calendarLevel) { // 保留到 SECOND
-            date = parseDate(format.format(date), format);
-            return date;
+    public static String format(Date date, DateFormat dateFormat) {
+        if (null == date) {
+            return null;
         }
-        return cal.getTime();
+        if (null == dateFormat) { // 尽管dateFormat为null将编译报错，因为format有两个方法（2 param），依旧判断处理
+            return threadLocal.get().format(date);
+        }
+        return dateFormat.format(date);
     }
 
-    /**
-     * 比较两个日期的天数间隔.
-     * 
-     * @param time1
-     *            time1
-     * @param time2
-     *            time2
-     * @return int
-     */
-    public static int getDateInterval(Date time1, Date time2) {
-        return getDateInterval(time1, time2, Calendar.DAY_OF_YEAR);
+    public static String format(Date date, String dateFormat) {
+        if (null == date) {
+            return null;
+        }
+        if (null == dateFormat) {
+            return threadLocal.get().format(date);
+        }
+        DateFormat df = new SimpleDateFormat(dateFormat);
+        return df.format(date);
     }
 
-    /**
-     * 比较两个日期的间隔.
-     * 
-     * @param date1
-     *            date1
-     * @param date2
-     *            date2
-     * @return int
-     */
-    public static int getDateInterval(Date date1, Date date2, int calendarLevel) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date1);
-        int beginDay = calendar.get(calendarLevel);
-        calendar.setTime(date2);
-        int endDay = calendar.get(calendarLevel);
-        return beginDay - endDay;
+    public static Date parseDate(String source) {
+        try {
+            return threadLocal.get().parse(source);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -140,6 +142,97 @@ public class DateUtil {
     }
 
     /**
+     * 保留日期到某一级别（天、时、分、秒...）.
+     * 
+     * @param date
+     *            date
+     * @param calendarLevel
+     *            保留级别，null保留到day
+     * @return date
+     */
+    public static Date setDate(Date date, Integer calendarLevel) {
+        if (null == date) {
+            return null;
+        }
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        if (null == calendarLevel || Calendar.DATE == calendarLevel) { // 保留到 Day
+            cal.set(Calendar.HOUR, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+        } else if (Calendar.HOUR == calendarLevel) { // 保留到 Hour
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+        } else if (Calendar.MINUTE == calendarLevel) { // 保留到 MINUTE
+            cal.set(Calendar.SECOND, 0);
+        } else if (Calendar.SECOND == calendarLevel) { // 保留到 SECOND
+            threadLocal.set(format_Default);
+            date = parseDate(threadLocal.get().format(date), threadLocal.get());
+            return date;
+        }
+        return cal.getTime();
+    }
+
+    /**
+     * 比较两个日期的天数间隔.
+     * 
+     * @param time1
+     *            time1
+     * @param time2
+     *            time2
+     * @return int
+     */
+    public static int getDateInterval(Date time1, Date time2) {
+        return getDateInterval(time1, time2, Calendar.DAY_OF_YEAR);
+    }
+
+    /**
+     * 比较两个日期的天数间隔(返回绝对值).
+     * 
+     * @param time1
+     *            time1
+     * @param time2
+     *            time2
+     * @return int
+     */
+    public static int getDateIntervalAbs(Date time1, Date time2) {
+        return Math.abs(getDateInterval(time1, time2, Calendar.DAY_OF_YEAR));
+    }
+
+    /**
+     * 比较两个日期的间隔.
+     * 
+     * @param date1
+     *            date1
+     * @param date2
+     *            date2
+     * @param calendarLevel
+     *            比较级别，采用Calendar属性
+     */
+    public static int getDateInterval(Date date1, Date date2, int calendarLevel) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date1);
+        int beginDay = calendar.get(calendarLevel);
+        calendar.setTime(date2);
+        int endDay = calendar.get(calendarLevel);
+        return Math.abs(beginDay - endDay);
+    }
+
+    /**
+     * 比较两个日期的间隔(返回绝对值).
+     * 
+     * @param date1
+     *            date1
+     * @param date2
+     *            date2
+     * @param calendarLevel
+     *            比较级别，采用Calendar属性
+     */
+    public static int getDateIntervalAbs(Date date1, Date date2, int calendarLevel) {
+        return Math.abs(getDateInterval(date1, date2, calendarLevel));
+    }
+
+    /**
      * 获取当前日期指定时间.
      * 
      * @param date
@@ -153,13 +246,14 @@ public class DateUtil {
         if (null == date) {
             return null;
         }
-        String dateStr = format.format(date);
+        threadLocal.set(format_Default);
+        String dateStr = threadLocal.get().format(date);
         dateStr = dateStr.substring(0, 10);
         if (null != time) {
             time = time.trim();
             dateStr += " " + time;
         }
-        date = parseDate(dateStr, format);
+        date = parseDate(dateStr, threadLocal.get());
         return date;
     }
 }

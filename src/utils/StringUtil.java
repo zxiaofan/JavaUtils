@@ -108,9 +108,9 @@ public class StringUtil {
      */
     public static Integer getInteger(Object param) {
         Integer result = null;
-        if (param != null && param instanceof String && !"".equals(param)) {
-            String p = (String) param;
+        if (param != null && !"".equals(param)) {
             try {
+                String p = String.valueOf(param);
                 result = Integer.valueOf(p);
             } catch (NumberFormatException e) {
                 // e.printStackTrace();
