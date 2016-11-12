@@ -142,6 +142,40 @@ public class DateUtil {
     }
 
     /**
+     * 日期增加num天.
+     * 
+     * @param date
+     *            date
+     * @param num
+     *            加减天数
+     * @return Date
+     */
+    public static Date addDate(Date date, int num) {
+        return addDate(date, Calendar.DATE, num);
+    }
+
+    /**
+     * 时间增加.
+     * 
+     * @param date
+     *            date
+     * @param calendar
+     *            加减级别Calendar
+     * @param num
+     *            加减天数
+     * @return Date
+     */
+    public static Date addDate(Date date, int calendar, int num) {
+        if (null == date || 0 == num) {
+            return date;
+        }
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.add(calendar, num);
+        return cal.getTime();
+    }
+
+    /**
      * 保留日期到某一级别（天、时、分、秒...）.
      * 
      * @param date
