@@ -30,6 +30,8 @@ By github.com/zxiaofan(https://github.com/zxiaofan/JavaUtils)
 　　parseDate指定DateFormat格式化日期；dateToHms获取当前日期指定时间；getDateInterval比较两个日期的间隔；setDate保留日期到某一级别  
 **8、StringUtil**  
 　　isNullOrEmpty判空；Json、Xml首字母大转小、小转大；getInteger字符串转Integer  
+**9、FileUtil**  
+　　getSpecificLine超大文本获取指定内容行  
 
 # passwordUtil
 2016-08-29（新增加解密工具类）  
