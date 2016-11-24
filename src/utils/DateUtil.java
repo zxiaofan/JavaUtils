@@ -13,6 +13,9 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * 日期util
@@ -40,6 +43,8 @@ public class DateUtil {
 
     public static String format_yMdS_slash = "yyyy/MM/dd HH:mm:ss.S";
 
+    private static Map<String, String> mapSign = new HashMap<>(); // 日期特殊字符对应
+
     /**
      * 使用ThreadLocal解决SimpleDateFormat不同步问题.
      */
@@ -49,7 +54,19 @@ public class DateUtil {
             return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         }
     };
+    static {
+        mapSign.put("上午|下午", "a");
+        mapSign.put("星期[一二三四五六日天七]", "E");
+        mapSign.put("CST", "z");
+        mapSign.put("公元[前]?", "G");
+    }
 
+    /**
+     * 常规日期格式yyyy-MM-dd HH:mm:ss.
+     * 
+     * @param date
+     * @return
+     */
     public static String format(Date date) {
         return threadLocal.get().format(date);
     }
@@ -58,6 +75,7 @@ public class DateUtil {
      * 指定格式格式化日期.
      * 
      * @param date
+     *            date
      * @param dateFormat
      * @return
      */
@@ -82,7 +100,7 @@ public class DateUtil {
         return df.format(date);
     }
 
-    public static Date parseDate(String source) {
+    public static Date parse(String source) {
         try {
             return threadLocal.get().parse(source);
         } catch (ParseException e) {
@@ -100,7 +118,7 @@ public class DateUtil {
      *            time
      * @return Date
      */
-    public static Date parseDate(String time, DateFormat dateFormat) {
+    public static Date parse(String time, DateFormat dateFormat) {
         if (null == time) {
             return null;
         }
@@ -122,7 +140,7 @@ public class DateUtil {
      *            dateFormat
      * @return Date
      */
-    public static Date parseDate(String time, String dateFormat) {
+    public static Date parse(String time, String dateFormat) {
         if (null == time) {
             return null;
         }
@@ -136,8 +154,52 @@ public class DateUtil {
             if ((!"".equals(time)) && (time.length() < dateFormat.length())) { // format字符串过长
                 time += dateFormat.substring(time.length()).replaceAll("[YyMmDdHhSs]", "0");
             }
-            date = parseDate(time, df);
+            date = parse(time, df);
         }
+        return date;
+    }
+
+    /**
+     * 自动解析时间格式并parse时间（支持年月日时分秒毫秒格式，前包含）.
+     * 
+     * @param time
+     *            time
+     * @return Date
+     * @throws ParseException
+     */
+    public static Date parseAuto(String time) throws ParseException {
+        if (null == time) {
+            return null;
+        }
+        time = time.trim();
+        String formatPattern = "";
+        if (time.matches("[\\d]+")) { // 纯数字
+            String all = "yyyyMMddHHmmssSSS";
+            if (time.length() > all.length()) { // 超长截取
+                time = time.substring(0, all.length());
+            }
+            formatPattern = all.substring(0, time.length());
+        } else {
+            char next = 'y';
+            String idNext = "yMdHmsS";
+            StringBuffer buffer = new StringBuffer();
+            for (char var : time.toCharArray()) {
+                if (String.valueOf(var).matches("[0-9]")) {
+                    buffer.append(next);
+                } else if ("T".equals(String.valueOf(var))) {
+                    buffer.append("'").append(var).append("'");
+                } else {
+                    buffer.append(var);
+                    next = idNext.charAt(Math.min(idNext.indexOf(next) + 1, idNext.length() - 1));
+                }
+            }
+            formatPattern = buffer.toString();
+        }
+        for (Entry<String, String> entry : mapSign.entrySet()) {
+            formatPattern = formatPattern.replaceAll(entry.getKey(), entry.getValue());
+        }
+        DateFormat format = new SimpleDateFormat(formatPattern);
+        Date date = format.parse(time);
         return date;
     }
 
@@ -201,7 +263,7 @@ public class DateUtil {
             cal.set(Calendar.SECOND, 0);
         } else if (Calendar.SECOND == calendarLevel) { // 保留到 SECOND
             threadLocal.set(format_Default);
-            date = parseDate(threadLocal.get().format(date), threadLocal.get());
+            date = parse(threadLocal.get().format(date), threadLocal.get());
             return date;
         }
         return cal.getTime();
@@ -287,7 +349,7 @@ public class DateUtil {
             time = time.trim();
             dateStr += " " + time;
         }
-        date = parseDate(dateStr, threadLocal.get());
+        date = parse(dateStr, threadLocal.get());
         return date;
     }
 }
