@@ -27,11 +27,11 @@ By github.com/zxiaofan(https://github.com/zxiaofan/JavaUtils)
 **6、GsonUtil**  
 　　fromJson(String json, Class raw, Class actual);toJson避免String被转义;支持自定义时间格式  
 **7、DateUtil**  
-　　parseDate指定DateFormat格式化日期；dateToHms获取当前日期指定时间；getDateInterval比较两个日期的间隔；setDate保留日期到某一级别  
+　　parse指定DateFormat格式化日期；dateToHms获取当前日期指定时间；getDateInterval比较两个日期的间隔；setDate保留日期到某一级别;parseAuto自动解析时间格式并parse时间（支持年月日时分秒毫秒格式，前包含）  
 **8、StringUtil**  
-　　isNullOrEmpty判空；Json、Xml首字母大转小、小转大；getInteger字符串转Integer  
+　　isNullOrEmpty判空；Json、Xml首字母大转小、小转大；getInteger字符串转Integer（异常返回默认值）  
 **9、FileUtil**  
-　　getSpecificLine超大文本获取指定内容行  
+　　getSpecificLine超大文本获取指定内容行;readFileToString读取本地文件为字符串;writeStringToFile将字符串数据存于本地  
 **10、PrintUtil**  
 　　控制台输出工具类，统一控制程序控制台输出  
 

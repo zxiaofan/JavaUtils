@@ -9,7 +9,13 @@
 package utils;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
+import java.io.StringWriter;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -99,4 +105,95 @@ public class FileUtil {
         return buffer.toString();
     }
 
+    /**
+     * 读取本地文件为字符串.
+     * 
+     * @param fileName
+     *            文件名
+     * @param encode
+     *            字符编码
+     * @return String
+     * @throws IOException
+     *             IOException
+     */
+    public static String readFileToString(String fileName, String encode) throws IOException {
+        java.io.InputStream input = null;
+        try {
+            File file = new File(fileName);
+            if (file.exists()) {
+                if (file.isDirectory())
+                    throw new IOException("File '" + file + "' exists but is a directory");
+                if (!file.canRead())
+                    throw new IOException("File '" + file + "' cannot be read");
+                else
+                    input = new FileInputStream(file);
+            } else {
+                throw new FileNotFoundException("File '" + file + "' does not exist");
+            }
+            StringWriter output = new StringWriter();
+            InputStreamReader in = null;
+            if (encode == null) {
+                in = new InputStreamReader(input);
+            } else {
+                in = new InputStreamReader(input, encode);
+            }
+            char buffer[] = new char[4096];
+            for (int n = 0; -1 != (n = in.read(buffer));) {
+                output.write(buffer, 0, n);
+            }
+            String s = output.toString();
+            return s;
+        } finally {
+            if (null != input) {
+                try {
+                    input.close();
+                } catch (Exception e) {
+                    System.out.print("");
+                }
+            }
+        }
+    }
+
+    /**
+     * 将字符串数据存于本地.
+     * 
+     * @param fileName
+     *            文件名
+     * @param data
+     *            数据
+     * @param encode
+     *            编码（可为null）
+     * @throws IOException
+     *             IO异常
+     */
+    public static void writeStringToFile(String fileName, String data, String encode) throws IOException {
+        FileOutputStream output = null;
+        File file = new File(fileName);
+        if (file.exists()) {
+            if (file.isDirectory())
+                throw new IOException("File '" + file + "' exists but is a directory");
+            if (!file.canWrite())
+                throw new IOException("File '" + file + "' cannot be written to");
+        } else {
+            File parent = file.getParentFile();
+            if (parent != null && !parent.exists() && !parent.mkdirs())
+                throw new IOException("File '" + file + "' could not be created");
+        }
+        try {
+            output = new FileOutputStream(file);
+            if (data != null)
+                if (encode == null)
+                    output.write(data.getBytes());
+                else
+                    output.write(data.getBytes(encode));
+        } finally {
+            if (null != output) {
+                try {
+                    output.close();
+                } catch (IOException e) {
+                    System.out.print("");
+                }
+            }
+        }
+    }
 }
