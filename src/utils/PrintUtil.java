@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 public class PrintUtil {
 
     /**
-     * 控制台输出级别（false-0不输出，error-3输出异常，info-2输出重要信息【默认】，debug-1输出所有）.
+     * 控制台输出级别（false-0不输出，error-1输出异常，info-2输出重要信息【默认】，debug-3输出所有）.
      */
     private static String console;
 
@@ -44,6 +44,9 @@ public class PrintUtil {
             return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         }
     };
+    static {
+        initLevel();
+    }
 
     /**
      * 重要信息【默认】.
@@ -64,7 +67,7 @@ public class PrintUtil {
      *            param
      */
     public static void printError(Object param) {
-        if (level >= 3) {
+        if (level >= 1) {
             dealPrint(param);
         }
     }
@@ -76,7 +79,7 @@ public class PrintUtil {
      *            param
      */
     public static void printDebug(Object param) {
-        if (level >= 1) {
+        if (level >= 3) {
             dealPrint(param);
         }
     }
@@ -129,10 +132,10 @@ public class PrintUtil {
      * @return 异常信息
      */
     private static String locateException(Throwable e, int i) {
-        if (e != null && e.getStackTrace().length > i) {
+        if (e != null && null != e.getStackTrace() && i >= 0 && e.getStackTrace().length > i) {
             return ">>>" + e.getStackTrace()[i].getFileName() + "-" + e.getStackTrace()[i].getMethodName() + e.getStackTrace()[i].getLineNumber();
         }
-        return null;
+        return "";
     }
 
     /**
@@ -144,20 +147,20 @@ public class PrintUtil {
             return;
         }
         if (null == console || "".equals(console) || "error".equals(console)) {
-            level = 3;
+            level = 1;
         } else if ("false".equals(console)) {
             level = 0;
         } else if ("info".equals(console)) {
             level = 2;
         } else if ("debug".equals(console)) {
-            level = 1;
+            level = 3;
         } else {
-            level = 2;
+            level = 1;
         }
     }
 
     /**
-     * 初始化异常级别.
+     * 初始化异常级别（未配置console时，console==null）.
      * 
      * @param console
      *            异常级别
