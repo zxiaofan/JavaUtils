@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 public class PrintUtil {
 
     /**
-     * 控制台输出级别（false-0不输出，error-1输出异常，info-2输出重要信息【默认】，debug-3输出所有）.
+     * 控制台输出级别（false-0不输出，error-1输出异常【默认】，info-2输出重要信息，debug-3输出所有）.
      */
     private static String console;
 
@@ -34,6 +34,12 @@ public class PrintUtil {
      * 输出级别.
      */
     private static Integer level = -1;
+
+    private static String levelError = "error";
+
+    private static String levelInfo = "info";
+
+    private static String levelDebug = "debug";
 
     /**
      * 使用ThreadLocal解决SimpleDateFormat不同步问题.
@@ -44,18 +50,29 @@ public class PrintUtil {
             return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         }
     };
+
+    /**
+     * 当前输出描述.
+     */
+    private static ThreadLocal<String> threadLevelDesc = new ThreadLocal<String>() {
+        @Override
+        protected String initialValue() {
+            return "default";
+        }
+    };
     static {
         initLevel();
     }
 
     /**
-     * 重要信息【默认】.
+     * 重要信息.
      * 
      * @param param
      *            param
      */
     public static void print(Object param) {
         if (level >= 2) {
+            threadLevelDesc.set(levelInfo);
             dealPrint(param);
         }
     }
@@ -68,6 +85,7 @@ public class PrintUtil {
      */
     public static void printError(Object param) {
         if (level >= 1) {
+            threadLevelDesc.set(levelError);
             dealPrint(param);
         }
     }
@@ -80,6 +98,7 @@ public class PrintUtil {
      */
     public static void printDebug(Object param) {
         if (level >= 3) {
+            threadLevelDesc.set(levelDebug);
             dealPrint(param);
         }
     }
@@ -105,8 +124,9 @@ public class PrintUtil {
      *            字符串
      */
     private static void print(String s) {
-        System.out.println("[" + threadLocal.get().format(new Date()) + "]" + s);
+        System.out.println(threadLevelDesc.get() + ":[" + threadLocal.get().format(new Date()) + "]" + s);
         threadLocal.remove();
+        threadLevelDesc.remove();
     }
 
     /**
@@ -146,13 +166,13 @@ public class PrintUtil {
         if (-1 != level) {
             return;
         }
-        if (null == console || "".equals(console) || "error".equals(console)) {
+        if (null == console || "".equals(console) || levelError.equals(console)) {
             level = 1;
         } else if ("false".equals(console)) {
             level = 0;
-        } else if ("info".equals(console)) {
+        } else if (levelInfo.equals(console)) {
             level = 2;
-        } else if ("debug".equals(console)) {
+        } else if (levelDebug.equals(console)) {
             level = 3;
         } else {
             level = 1;
