@@ -15,22 +15,22 @@ import java.sql.Timestamp;
 import java.util.Date;
 
 /**
- * github.zxiaofan.com
+ * github.zxiaofan.com.
  * 
  * @author zxiaofan
  */
-@SuppressWarnings(value = {"rawtypes", "unchecked"})
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class BeanUtils {
     /**
      * 构造函数.
      * 
      */
-    private BeanUtils() {
+    public BeanUtils() {
         throw new RuntimeException("this is a util class,can not instance");
     }
 
     /**
-     * fullDeepCopy：source to target(target完全完全深复制为source)
+     * fullDeepCopy：source to target(target完全完全深复制为source).
      * 
      * @param source
      *            源实体类
@@ -47,7 +47,7 @@ public class BeanUtils {
     }
 
     /**
-     * 按需复制source里的属性到target
+     * 按需复制source里的属性到target.
      * 
      * @param source
      *            源实体类
@@ -90,7 +90,7 @@ public class BeanUtils {
     }
 
     /**
-     * 根据属性名取值
+     * 根据属性名取值.
      * 
      * @param bean
      *            实体
@@ -119,7 +119,7 @@ public class BeanUtils {
     }
 
     /**
-     * 给指定属性赋值
+     * 给指定属性赋值.
      * 
      * @param bean
      *            实体
@@ -148,7 +148,7 @@ public class BeanUtils {
     }
 
     /**
-     * 根据属性名得到get方法
+     * 根据属性名得到get方法.
      * 
      * @param propertyName
      *            属性名
@@ -160,7 +160,7 @@ public class BeanUtils {
     }
 
     /**
-     * 根据属性名得到is方法(boolean|Bollean型)
+     * 根据属性名得到is方法(boolean|Bollean型).
      * 
      * @param propertyName
      *            属性名
@@ -172,7 +172,7 @@ public class BeanUtils {
     }
 
     /**
-     * 根据属性名得到set方法
+     * 根据属性名得到set方法.
      * 
      * @param propertyName
      *            属性名
@@ -191,8 +191,9 @@ public class BeanUtils {
      * @return boolean
      */
     private static boolean isNullOrEmpty(Object src) {
-        if (null == src)
+        if (null == src) {
             return true;
+        }
         if (src instanceof String) {
             return "".equals(((String) src).trim());
         }
@@ -224,6 +225,18 @@ public class BeanUtils {
         }
     }
 
+    /**
+     * 设置属性.
+     * 
+     * @param obj
+     *            obj
+     * @param cla
+     *            Class
+     * @param field
+     *            Field
+     * @throws Exception
+     *             Exception
+     */
     private static void setFieldValue(Object obj, Class cla, Field field) throws Exception {
         // NoSuchMethodException, IllegalAccessException, InvocationTargetException
         Class type = field.getType();
@@ -291,5 +304,33 @@ public class BeanUtils {
             method = cla.getMethod(methodName, Timestamp.class);
             method.invoke(obj, new Timestamp(System.currentTimeMillis()));
         }
+    }
+
+    /**
+     * 拼接属性（尽量使用包装类，基本类型会有默认值）.
+     * 
+     * @param obj
+     *            obj
+     * @return 拼接结果
+     * @throws Exception
+     *             Exception
+     */
+    public static String joinProperty(Object obj) throws Exception {
+        StringBuffer value = new StringBuffer(100);
+        Field[] fields = obj.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            String name = field.getName();
+            value.append("&" + name + "=");
+            name = name.substring(0, 1).toUpperCase() + name.substring(1);
+            Method m = null;
+            try {
+                m = obj.getClass().getMethod("get" + name);
+                value.append(m.invoke(obj));
+            } catch (NoSuchMethodException e) {
+                m = obj.getClass().getMethod("is" + name);
+                value.append(m.invoke(obj));
+            }
+        }
+        return value.toString();
     }
 }
