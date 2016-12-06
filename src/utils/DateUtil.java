@@ -19,7 +19,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 日期util
+ * 日期util.
  * 
  * @author zxiaofan
  */
@@ -28,31 +28,64 @@ public class DateUtil {
      * 构造函数.
      * 
      */
-    private DateUtil() {
+    public DateUtil() {
         throw new RuntimeException("this is a util class,can not instance!");
     }
 
-    private static DateFormat format_Default = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    /**
+     * 添加字段注释.
+     */
+    private static DateFormat formatDefault = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
+    /**
+     * 添加字段注释.
+     */
     public static String format = "yyyy-MM-dd HH:mm:ss";
 
-    public static String format_yMd = "yyyy-MM-dd";
+    /**
+     * 添加字段注释.
+     */
+    public static String formatyMd = "yyyy-MM-dd";
 
-    public static String format_yMdS = "yyyy-MM-dd HH:mm:ss.S";
+    /**
+     * 添加字段注释.
+     */
+    public static String formatyMdS = "yyyy-MM-dd HH:mm:ss.S";
 
-    public static String format_slash = "yyyy/MM/dd HH:mm:ss";
+    /**
+     * 添加字段注释.
+     */
+    public static String formatslash = "yyyy/MM/dd HH:mm:ss";
 
-    public static String format_yMdS_slash = "yyyy/MM/dd HH:mm:ss.S";
+    /**
+     * 添加字段注释.
+     */
+    public static String formatyMdSslash = "yyyy/MM/dd HH:mm:ss.S";
 
-    public final static String day = "day"; // 粒度级别
+    /**
+     * 添加字段注释.
+     */
+    public static final String DAY = "day"; // 粒度级别
 
-    public final static String hour = "hour";
+    /**
+     * 添加字段注释.
+     */
+    public static final String HOUR = "hour";
 
-    public final static String minute = "minute";
+    /**
+     * 添加字段注释.
+     */
+    public static final String MINUTE = "minute";
 
-    public final static String second = "second";
+    /**
+     * 添加字段注释.
+     */
+    public static final String SECOND = "second";
 
-    private static Map<String, String> mapSign = new HashMap<>(); // 日期特殊字符对应
+    /**
+     * 日期特殊字符对应.
+     */
+    private static Map<String, String> mapSign = new HashMap<>();
 
     /**
      * 使用ThreadLocal解决SimpleDateFormat不同步问题.
@@ -74,7 +107,8 @@ public class DateUtil {
      * 常规日期格式yyyy-MM-dd HH:mm:ss.
      * 
      * @param date
-     * @return
+     *            date
+     * @return time
      */
     public static String format(Date date) {
         return threadLocal.get().format(date);
@@ -86,7 +120,8 @@ public class DateUtil {
      * @param date
      *            date
      * @param dateFormat
-     * @return
+     *            dateFormat
+     * @return time
      */
     public static String format(Date date, DateFormat dateFormat) {
         if (null == date) {
@@ -98,6 +133,15 @@ public class DateUtil {
         return dateFormat.format(date);
     }
 
+    /**
+     * 格式化时间.
+     * 
+     * @param date
+     *            date
+     * @param dateFormat
+     *            dateFormat
+     * @return time
+     */
     public static String format(Date date, String dateFormat) {
         if (null == date) {
             return null;
@@ -109,6 +153,13 @@ public class DateUtil {
         return df.format(date);
     }
 
+    /**
+     * parse时间yyyy-MM-dd HH:mm:ss.
+     * 
+     * @param source
+     *            source
+     * @return Date
+     */
     public static Date parse(String source) {
         try {
             return threadLocal.get().parse(source);
@@ -175,6 +226,7 @@ public class DateUtil {
      *            time
      * @return Date
      * @throws ParseException
+     *             ParseException
      */
     public static Date parseAuto(String time) throws ParseException {
         if (null == time) {
@@ -207,8 +259,8 @@ public class DateUtil {
         for (Entry<String, String> entry : mapSign.entrySet()) {
             formatPattern = formatPattern.replaceAll(entry.getKey(), entry.getValue());
         }
-        DateFormat format = new SimpleDateFormat(formatPattern);
-        Date date = format.parse(time);
+        DateFormat df = new SimpleDateFormat(formatPattern);
+        Date date = df.parse(time);
         return date;
     }
 
@@ -262,22 +314,24 @@ public class DateUtil {
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
         switch (level) {
-            case day: // 保留到 Day
+            case DAY: // 保留到 Day
                 cal.set(Calendar.HOUR, 0);
                 cal.set(Calendar.MINUTE, 0);
                 cal.set(Calendar.SECOND, 0);
                 break;
-            case hour: // 保留到 Hour
+            case HOUR: // 保留到 Hour
                 cal.set(Calendar.MINUTE, 0);
                 cal.set(Calendar.SECOND, 0);
                 break;
-            case minute: // 保留到 MINUTE
+            case MINUTE: // 保留到 MINUTE
                 cal.set(Calendar.SECOND, 0);
                 break;
-            case second: // 保留到 SECOND
-                threadLocal.set(format_Default);
+            case SECOND: // 保留到 SECOND
+                threadLocal.set(formatDefault);
                 date = parse(threadLocal.get().format(date), threadLocal.get());
                 return date;
+            default:
+                break;
         }
         return cal.getTime();
     }
@@ -289,8 +343,8 @@ public class DateUtil {
      *            date1
      * @param date2
      *            date2
-     * @param calendarLevel
-     *            比较级别，采用Calendar属性
+     * @param level
+     *            比较级别
      * @return int 无对应时间间隔级别
      */
     public static Integer getDateInterval(Date date1, Date date2, String level) {
@@ -308,8 +362,8 @@ public class DateUtil {
      *            date1
      * @param date2
      *            date2
-     * @param calendarLevel
-     *            比较级别，采用Calendar属性
+     * @param level
+     *            比较级别
      * @return int 无对应时间间隔级别
      */
     public static Integer getDateIntervalCeil(Date date1, Date date2, String level) {
@@ -327,8 +381,8 @@ public class DateUtil {
      *            date1
      * @param date2
      *            date2
-     * @param calendarLevel
-     *            比较级别，采用Calendar属性
+     * @param level
+     *            比较级别
      * @return int 无对应时间间隔级别
      */
     private static Double dateInterval(Date date1, Date date2, String level) {
@@ -338,16 +392,16 @@ public class DateUtil {
         }
         Double num = null;
         switch (level) {
-            case day: // 天
+            case DAY: // 天
                 num = (Double) (time / TimeUnit.DAYS.toMillis(1));
                 break;
-            case hour: // 小时
+            case HOUR: // 小时
                 num = (Double) (time / TimeUnit.HOURS.toMillis(1));
                 break;
-            case minute: // 分钟
+            case MINUTE: // 分钟
                 num = (Double) (time / TimeUnit.MINUTES.toMillis(1));
                 break;
-            case second: // 秒
+            case SECOND: // 秒
                 num = (Double) (time / TimeUnit.SECONDS.toMillis(1));
                 break;
             default:
@@ -370,7 +424,7 @@ public class DateUtil {
         if (null == date) {
             return null;
         }
-        threadLocal.set(format_Default);
+        threadLocal.set(formatDefault);
         String dateStr = threadLocal.get().format(date);
         dateStr = dateStr.substring(0, 10);
         if (null != time) {
