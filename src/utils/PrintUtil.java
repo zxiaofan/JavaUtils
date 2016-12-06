@@ -35,10 +35,19 @@ public class PrintUtil {
      */
     private static Integer level = -1;
 
+    /**
+     * 输出级别-error.
+     */
     private static String levelError = "error";
 
+    /**
+     * 输出级别-info.
+     */
     private static String levelInfo = "info";
 
+    /**
+     * 输出级别-debug.
+     */
     private static String levelDebug = "debug";
 
     /**
@@ -60,9 +69,6 @@ public class PrintUtil {
             return "default";
         }
     };
-    static {
-        initLevel();
-    }
 
     /**
      * 重要信息.
