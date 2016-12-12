@@ -16,6 +16,14 @@ import org.springframework.stereotype.Component;
 public class SpringContextUtil implements ApplicationContextAware {
 
     /**
+     * 构造函数.
+     * 
+     */
+    public SpringContextUtil() {
+        throw new RuntimeException("this is a util class,can not instance!");
+    }
+
+    /**
      * Spring应用上下文环境.
      */
     private static ApplicationContext applicationContext;

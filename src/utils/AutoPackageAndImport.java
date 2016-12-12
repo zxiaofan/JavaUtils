@@ -67,6 +67,14 @@ public class AutoPackageAndImport {
     }
 
     /**
+     * 构造函数.
+     * 
+     */
+    public AutoPackageAndImport() {
+        throw new RuntimeException("this is a util class,can not instance!");
+    }
+
+    /**
      * 执行方法.
      * 
      * @param filePath

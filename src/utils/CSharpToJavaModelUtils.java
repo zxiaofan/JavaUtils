@@ -126,6 +126,14 @@ public class CSharpToJavaModelUtils {
     private static String outputPath = "d:\\model\\";
 
     /**
+     * 构造函数.
+     * 
+     */
+    public CSharpToJavaModelUtils() {
+        throw new RuntimeException("this is a util class,can not instance!");
+    }
+
+    /**
      * 执行转换.
      * 
      * @param path

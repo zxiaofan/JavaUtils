@@ -17,7 +17,7 @@ public class StringUtil {
      * 构造函数.
      * 
      */
-    private StringUtil() {
+    public StringUtil() {
         throw new RuntimeException("this is a util class,can not instance!");
     }
 

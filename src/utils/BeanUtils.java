@@ -320,14 +320,15 @@ public class BeanUtils {
         Field[] fields = obj.getClass().getDeclaredFields();
         for (Field field : fields) {
             String name = field.getName();
-            value.append("&" + name + "=");
-            name = name.substring(0, 1).toUpperCase() + name.substring(1);
+            String upper = name.substring(0, 1).toUpperCase() + name.substring(1);
             Method m = null;
             try {
-                m = obj.getClass().getMethod("get" + name);
-                value.append(m.invoke(obj));
+                m = obj.getClass().getMethod("get" + upper);
             } catch (NoSuchMethodException e) {
-                m = obj.getClass().getMethod("is" + name);
+                m = obj.getClass().getMethod("is" + upper);
+            }
+            if (null != m.invoke(obj)) {
+                value.append("&" + name + "=");
                 value.append(m.invoke(obj));
             }
         }

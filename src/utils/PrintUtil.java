@@ -51,6 +51,14 @@ public class PrintUtil {
     private static String levelDebug = "debug";
 
     /**
+     * 构造函数.
+     * 
+     */
+    public PrintUtil() {
+        throw new RuntimeException("this is a util class,can not instance!");
+    }
+
+    /**
      * 使用ThreadLocal解决SimpleDateFormat不同步问题.
      */
     private static ThreadLocal<DateFormat> threadLocal = new ThreadLocal<DateFormat>() {

@@ -34,6 +34,14 @@ public class FileUtil {
     static Map<String, Long> mapIndex = new ConcurrentHashMap<>(); // <行key,index>
 
     /**
+     * 构造函数.
+     * 
+     */
+    public FileUtil() {
+        throw new RuntimeException("this is a util class,can not instance!");
+    }
+
+    /**
      * 超大文本获取指定内容行.
      * 
      * 文件行索引完成后，获取内容耗时在毫秒级别。

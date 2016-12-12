@@ -23,8 +23,6 @@ public class GsonUtil {
      */
     private static final Gson GSON;
 
-    private static final Gson GSON_DHE;
-
     private static String format_Default = "yyyy-MM-dd HH:mm:ss";
 
     public static String format_y_M_d = "yyyy-MM-dd";
@@ -40,8 +38,7 @@ public class GsonUtil {
     }
 
     static {
-        GSON = new GsonBuilder().setDateFormat(format_Default).create();
-        GSON_DHE = new GsonBuilder().setDateFormat(format_Default).setPrettyPrinting().disableHtmlEscaping().create();
+        GSON = new GsonBuilder().setDateFormat(format_Default).create(); // 避免本地环境不同导致模式字符串不同引发Date错乱
     }
 
     /**
@@ -60,15 +57,6 @@ public class GsonUtil {
      */
     public static Gson getGson(String format) {
         return new GsonBuilder().setDateFormat(format).create();
-    }
-
-    /**
-     * 获取GSON-disableHtmlEscaping.
-     * 
-     * @return GSON
-     */
-    public static Gson getGson_DHE() {
-        return GSON_DHE;
     }
 
     /**

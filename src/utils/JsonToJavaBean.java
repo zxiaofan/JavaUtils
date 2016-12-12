@@ -39,11 +39,11 @@ import com.google.gson.Gson;
 @SuppressWarnings("unchecked")
 public class JsonToJavaBean {
     // ====== 修改参数 ====== //
-    private String path = "D:\\json.txt"; // 待转换Json路径
+    private String path = "E:\\517Projects\\01.酒店事业部\\04渠道API\\维也纳\\数据\\Image0300021.txt"; // 待转换Json路径
 
-    private static String packageName = "com.github.zxiaofan"; // packageName包名.
+    private static String packageName = "com.better517na.hotelBaseInterfaceService.model"; // packageName包名.
 
-    private String beanRootName = "Root"; // 根Bean名字
+    private String beanRootName = "Vienna"; // 根Bean名字
     // ====== 修改参数 ====== //
 
     private boolean addNote = true; // 是否添加注释
