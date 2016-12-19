@@ -421,8 +421,8 @@ public class DateUtil {
      * @return date
      */
     public static Date dateToHms(Date date, String time) {
-        if (null == date) {
-            return null;
+        if (null == date || null == time) {
+            return date;
         }
         threadLocal.set(formatDefault);
         String dateStr = threadLocal.get().format(date);
