@@ -427,10 +427,8 @@ public class DateUtil {
         threadLocal.set(formatDefault);
         String dateStr = threadLocal.get().format(date);
         dateStr = dateStr.substring(0, 10);
-        if (null != time) {
-            time = time.trim();
-            dateStr += " " + time;
-        }
+        time = time.trim();
+        dateStr += " " + time;
         date = parse(dateStr, threadLocal.get());
         return date;
     }

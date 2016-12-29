@@ -39,18 +39,18 @@ import com.google.gson.Gson;
 @SuppressWarnings("unchecked")
 public class JsonToJavaBean {
     // ====== 修改参数 ====== //
-    private String path = "E:\\517Projects\\01.酒店事业部\\04渠道API\\维也纳\\数据\\Image0300021.txt"; // 待转换Json路径
+    private String path = "D:\\json.txt"; // 待转换Json路径
 
-    private static String packageName = "com.better517na.hotelBaseInterfaceService.model"; // packageName包名.
+    private static String packageName = "com.zxiaofan.model"; // packageName包名.
 
-    private String beanRootName = "Vienna"; // 根Bean名字
+    private String beanRootName = "Root"; // 根Bean名字
     // ====== 修改参数 ====== //
 
     private boolean addNote = true; // 是否添加注释
 
     private boolean defaultInteger = true; // 默认使用Integer代替int
 
-    private static String packagePath = "model.vo"; // package默认加入该路径
+    private static String packagePath = "vo"; // package默认加入该路径
 
     private static String outputPath = "d:\\JsonToJavaBean\\"; // 输出路径
 
@@ -428,7 +428,7 @@ public class JsonToJavaBean {
             p = Pattern.compile(":\".*?\"(?=[,}])");
             m = p.matcher(str);
             str = m.replaceAll(":\"" + typeString + "\"");
-
+            str = str.replaceAll("/", "_");
         }
         return str;
     }
