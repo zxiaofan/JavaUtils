@@ -41,7 +41,7 @@ public class JsonToJavaBean {
     // ====== 修改参数 ====== //
     private String path = "D:\\json.txt"; // 待转换Json路径
 
-    private static String packageName = "com.zxiaofan.model"; // packageName包名.
+    private static String packageName = "com.zxiaofan.service.model.vo"; // packageName包名.
 
     private String beanRootName = "Root"; // 根Bean名字
     // ====== 修改参数 ====== //
@@ -50,7 +50,7 @@ public class JsonToJavaBean {
 
     private boolean defaultInteger = true; // 默认使用Integer代替int
 
-    private static String packagePath = "vo"; // package默认加入该路径
+    private static String packagePath = "csdn"; // package子路径
 
     private static String outputPath = "d:\\JsonToJavaBean\\"; // 输出路径
 
@@ -128,7 +128,7 @@ public class JsonToJavaBean {
                 continue;
             }
             StringBuffer buffer = new StringBuffer();
-            if (!"".equals(packageName) && packageName != null && !packageName.endsWith(".")) {
+            if (!"".equals(packageName) && packageName != null && !packageName.endsWith(".") && !"".equals(packagePath.trim())) {
                 packageName += ".";
             }
             buffer.append("package " + packageName + packagePath + ";" + rn + rn);
@@ -220,6 +220,13 @@ public class JsonToJavaBean {
         }
     }
 
+    /**
+     * 构建原始实体数据.
+     * 
+     * @param json
+     * @param beans
+     * @param className
+     */
     private void buildOrignBean(String json, List<Bean> beans, String className) {
         Map<String, Object> map = gson.fromJson(json, Map.class);
         Bean beanParent = new Bean();
@@ -243,7 +250,11 @@ public class JsonToJavaBean {
                 }
             } else if (v instanceof Double) {
                 // bean.setFieldType(ObjType.Double);
-                bean.setFieldType(matchRule(k, ObjType.Double, listRuleDouble));
+                String type = matchRule(k, ObjType.Double, listRuleDouble);
+                if (ObjType.Double.equals(type) && String.valueOf(v).endsWith(".0")) { // Gson转Map时会将int转为double，此处还原为int
+                    type = ObjType.Integer;
+                }
+                bean.setFieldType(type);
             } else if (v instanceof Boolean) {
                 bean.setFieldType(ObjType.Boolean);
             } else if (v instanceof String) {
@@ -362,6 +373,13 @@ public class JsonToJavaBean {
 
     }
 
+    /**
+     * 生成自定义规则列表.
+     * 
+     * @param matchRule
+     *            自定义规则
+     * @param listRule
+     */
     public void buildRule(String matchRule, List<String[]> listRule) {
         if (matchRule.length() != 0 && listRule.isEmpty()) {
             String[] rules = matchRule.split(",");
@@ -413,7 +431,7 @@ public class JsonToJavaBean {
     }
 
     /**
-     * 去空格去换行.
+     * 去空格去换行，去掉特殊字符.
      *
      * @param str
      *            str
