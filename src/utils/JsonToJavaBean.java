@@ -39,16 +39,16 @@ import com.google.gson.Gson;
 @SuppressWarnings("unchecked")
 public class JsonToJavaBean {
     // ====== 修改参数 ====== //
-    private String path = "D:\\json.txt"; // 待转换Json路径
+    private static String path = "D:\\json.txt"; // 待转换Json路径
 
     private static String packageName = "com.zxiaofan.service.model.vo"; // packageName包名.
 
-    private String beanRootName = "Root"; // 根Bean名字
+    private static String beanRootName = "Root"; // 根Bean名字
     // ====== 修改参数 ====== //
 
-    private boolean addNote = true; // 是否添加注释
+    private static boolean addNote = true; // 是否添加注释
 
-    private boolean defaultInteger = true; // 默认使用Integer代替int
+    private static boolean defaultInteger = true; // 默认使用Integer代替int
 
     private static String packagePath = "csdn"; // package子路径
 
@@ -64,13 +64,11 @@ public class JsonToJavaBean {
 
     private static boolean machRuleIgnoreCase = true; // 特殊匹配规则默认不区分大小写
 
-    static JsonToJavaBean start = new JsonToJavaBean();
-
     public static void main(String[] args) {
-        start.start();
+        start();
     }
 
-    public void start() {
+    public static void start() {
         // System.out.println("请输入待转换的json文件的绝对路径：");
         // Scanner scanner = new Scanner(System.in);
         // String path = scanner.nextLine();
@@ -101,7 +99,7 @@ public class JsonToJavaBean {
      * @param json
      * @param packageName
      */
-    private void toJavaBean(String json, String packageName) {
+    private static void toJavaBean(String json, String packageName) {
         if (!(json.startsWith("{") || json.endsWith("}"))) {
             throw new RuntimeException("不是标准的json文件:{...}"); // 暂不做过多校验
         }
@@ -119,7 +117,7 @@ public class JsonToJavaBean {
      * 生成Java model.
      * 
      */
-    private void createJavaModel() {
+    private static void createJavaModel() {
         createFile(outputPath);
         for (Entry<String, List<Bean>> entry : fields.entrySet()) {
             String[] listJar = new String[8]; // 顺序:BigDecimal、Date、List、Map、Set
@@ -211,7 +209,7 @@ public class JsonToJavaBean {
      * @param fieldVos
      *            fieldVos
      */
-    private void formatBean() {
+    private static void formatBean() {
         for (List<Bean> fieldVos : fields.values()) {
             for (Bean bean : fieldVos) {
                 bean.setFieldNameLower(CaseConversion(bean.getFieldName(), true));
@@ -227,7 +225,7 @@ public class JsonToJavaBean {
      * @param beans
      * @param className
      */
-    private void buildOrignBean(String json, List<Bean> beans, String className) {
+    private static void buildOrignBean(String json, List<Bean> beans, String className) {
         Map<String, Object> map = gson.fromJson(json, Map.class);
         Bean beanParent = new Bean();
         beanParent.setFieldName(className);
@@ -293,7 +291,7 @@ public class JsonToJavaBean {
      * 构建特殊匹配规则.
      * 
      */
-    private String matchRule(String fieldName, String fieldType, List<String[]> listRule) {
+    private static String matchRule(String fieldName, String fieldType, List<String[]> listRule) {
         if (!ismachRule) {
             return fieldType;
         }
@@ -380,7 +378,7 @@ public class JsonToJavaBean {
      *            自定义规则
      * @param listRule
      */
-    public void buildRule(String matchRule, List<String[]> listRule) {
+    public static void buildRule(String matchRule, List<String[]> listRule) {
         if (matchRule.length() != 0 && listRule.isEmpty()) {
             String[] rules = matchRule.split(",");
             for (String rule : rules) {
@@ -389,7 +387,7 @@ public class JsonToJavaBean {
         }
     }
 
-    private String readTextFile(String sFileName, String sEncode) {
+    private static String readTextFile(String sFileName, String sEncode) {
         StringBuffer sbStr = new StringBuffer();
         try {
             File ff = new File(sFileName);
@@ -413,7 +411,7 @@ public class JsonToJavaBean {
      * @param path
      *            路径
      */
-    private void createFile(String path) {
+    private static void createFile(String path) {
         File file = new File(path);
         if (!file.exists()) {
             if (path.contains(".")) {
@@ -437,7 +435,7 @@ public class JsonToJavaBean {
      *            str
      * @return str
      */
-    private String formatStr(String str) {
+    private static String formatStr(String str) {
         if (str != null) {
             Pattern p = Pattern.compile("\\s*|\t|\r|\n");
             Matcher m = p.matcher(str);
@@ -446,7 +444,7 @@ public class JsonToJavaBean {
             p = Pattern.compile(":\".*?\"(?=[,}])");
             m = p.matcher(str);
             str = m.replaceAll(":\"" + typeString + "\"");
-            str = str.replaceAll("/", "_");
+            str = str.replaceAll("/", "_").replaceAll("“|”", "\"");
         }
         return str;
     }
@@ -459,7 +457,7 @@ public class JsonToJavaBean {
      *            true:大转小
      * @return
      */
-    private String CaseConversion(String fieldName, boolean toLower) {
+    private static String CaseConversion(String fieldName, boolean toLower) {
         if ("".equals(fieldName)) {
             return "";
         }
