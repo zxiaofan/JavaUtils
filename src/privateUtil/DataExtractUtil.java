@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,20 +38,21 @@ import com.google.gson.Gson;
 public class DataExtractUtil {
     static String databaseName = "HotelBaseDataDB"; // 基础数据库名
 
-    static String tableNameBasic = "HotelRoomCN"; // 基础表名
+    static String tableNameBasic = "CN"; // 基础表名
 
     private static String timeStart = "1"; // 按年分表只需填写年份,按天分表需年月日格式
 
     private static String timeEnd = "52";
 
+    static String sign = "CN\\^"; // 替换指定字符
+
     private static int subStyle = 1; // 分表规则(1：hash,0：时间分表)
 
     static int timeout = 99000; // 超时设置
 
-    static int autoChangeTableName = 1; // 自动更换基础表名tableName模式（1自动，2手动）
+    static int autoChangeTableName = 3; // 自动更换基础表名tableName模式（1自动，2手动，3替换指定字符）
 
-    // sql中的所有表名请用dynamicTableName代替(手动模式)
-    static String sql = "查询sql语句";
+    static String sql = "sql语句";
 
     public static void main(String[] args) throws Exception {
         DataExtractUtil.start();
@@ -59,6 +61,8 @@ public class DataExtractUtil {
     public static void start() throws Exception {
         if (2 == autoChangeTableName) {
             System.out.println("sql中所有动态变化的表名请用dynamicTableName代替");
+        } else if (3 == autoChangeTableName) { // sql中含有多个不同表
+            System.out.println("sql中动态变化的字符串请用" + tableNameBasic + sign + "代替");
         }
         System.out.println("数据提取ing...");
         pathSave = pathSave + formatd.format(new Date()) + "\\";
@@ -66,7 +70,7 @@ public class DataExtractUtil {
         createFile(pathSave);
         for (String tableName : tableList) {
             service.submit(new queryDataThread(tableName));
-            Thread.sleep(500);
+            Thread.sleep(300);
             // querySave(tableName, allData);
         }
         service.shutdown();
@@ -109,7 +113,7 @@ public class DataExtractUtil {
      * @throws Exception
      */
     private static List<String> getAllTableName(String timeStart2, String timeEnd2) throws Exception {
-        if (timeStart2.length() != timeEnd2.length() || timeStart2.length() < 4 || timeStart2.length() > 8) {
+        if (subStyle == 0 && (timeStart2.length() != timeEnd2.length() || timeStart2.length() < 4 || timeStart2.length() > 8)) {
             throw new RuntimeException("时间格式错误");
         }
         SimpleDateFormat format = new SimpleDateFormat();
@@ -168,7 +172,8 @@ public class DataExtractUtil {
             out = new OutputStreamWriter(new FileOutputStream(file), "UTF-8");
             out.append(param);
             out.close();
-            System.out.println("success: " + path.substring(path.lastIndexOf("\\") + 1, path.lastIndexOf(".")));
+            atomic.addAndGet(1);
+            System.out.println(atomic + "_success: " + path.substring(path.lastIndexOf("\\") + 1, path.lastIndexOf(".")));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -211,12 +216,14 @@ public class DataExtractUtil {
 
     static List<String> listErrTable = Collections.synchronizedList(new ArrayList<>()); // 未提取到数据的表
 
-    private static ExecutorService service = Executors.newFixedThreadPool(10);
+    private static ExecutorService service = Executors.newFixedThreadPool(20);
 
     static ConcurrentHashMap<String, String> mapAllData = new ConcurrentHashMap<>(); // 所有数据集
 
     // private static Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create(); // 保留特殊字符
     static Gson gson = new Gson();
+
+    static AtomicInteger atomic = new AtomicInteger(0);
 
     public static String tableName;
 
@@ -322,6 +329,8 @@ class queryDataThread implements Runnable {
             while (matcher.find()) {
                 querySql = matcher.replaceAll(" FROM " + tableName + " ");
             }
+        } else if (3 == DataExtractUtil.autoChangeTableName) {
+            querySql = querySql.replaceAll(DataExtractUtil.sign, tableName);
         }
         // querySql.replaceAll("(\r\n|\r|\n|\n\r)", "<br>");
         querySql.replaceAll("\\u0027", "'");
