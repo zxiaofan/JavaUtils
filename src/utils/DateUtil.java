@@ -18,6 +18,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
+import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.datatype.XMLGregorianCalendar;
+
 /**
  * 日期util.
  * 
@@ -432,4 +436,34 @@ public class DateUtil {
         date = parse(dateStr, threadLocal.get());
         return date;
     }
+
+    /**
+     * 将Date类转换为XMLGregorianCalendar.
+     * 
+     * @param date
+     *            date
+     * @return XMLGregorianCalendar
+     * @throws DatatypeConfigurationException
+     *             DatatypeConfigurationException
+     */
+    public static XMLGregorianCalendar dateToXmlDate(Date date) throws DatatypeConfigurationException {
+        XMLGregorianCalendar dateType = null;
+        if (null != date) {
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(date);
+            DatatypeFactory dtf = DatatypeFactory.newInstance();
+            dateType = dtf.newXMLGregorianCalendar();
+            if (null != dateType) {
+                dateType.setYear(cal.get(Calendar.YEAR));
+                // 由于Calendar.MONTH取值范围为0~11,需要加1
+                dateType.setMonth(cal.get(Calendar.MONTH) + 1);
+                dateType.setDay(cal.get(Calendar.DAY_OF_MONTH));
+                dateType.setHour(cal.get(Calendar.HOUR_OF_DAY));
+                dateType.setMinute(cal.get(Calendar.MINUTE));
+                dateType.setSecond(cal.get(Calendar.SECOND));
+            }
+        }
+        return dateType;
+    }
+
 }
