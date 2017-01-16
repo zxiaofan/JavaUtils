@@ -15,36 +15,53 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
 /**
  * 修改所有文件（加注释），便于提测时提全量。
  * 
+ * github.zxiaofan.com
+ * 
  * @author zxiaofan
  */
 public class ModifyAllFile {
-    static List<String> suffix = Arrays.asList(".java"); // 处理以此后缀结尾的文件
-
-    static String addNote = "////AutoModify -By github.zxiaofan.com////";
+    /**
+     * 支持多条规则（以;分隔，每条规则以|分隔后缀名和增加内容）（a|b|c表示以a或b后后缀的文件将在文件头增加c）.
+     */
+    static String rule = ".java||////AutoModify -By zxiaofan////;.jsp|<!-- AutoModify -->";
 
     public static void main(String[] args) {
-        modify();
+        System.out.println("请输入待修改的文件（夹）的绝对路径：");
+        @SuppressWarnings("resource")
+        Scanner scanner = new Scanner(System.in);
+        String path = scanner.nextLine();
+        modify(path, rule);
     }
 
     /**
-     * 执行方法.
+     * 文件首行增加内容.
      * 
-     * @param filePath
+     * @param path
+     *            待修改文件路径
+     * @param rules
+     *            修改规则
      */
-    public static void modify() {
-        System.out.println("请输入待修改的文件（夹）的绝对路径：");
-        Scanner scanner = new Scanner(System.in);
-        String path = scanner.nextLine();
-        getAllFilePath(path);
+    public static void modify(String path, String rules) {
+        if (isNullOrEmpty(rules)) {
+            System.out.println("规则为空...");
+            return;
+        }
+        Map<String, String> mapRule = buildRuleMap(rules);
+        List<String> files = null;
+        if (null != mapRule && !mapRule.isEmpty()) {
+            files = getAllFilePath(path, mapRule.keySet());
+        }
         try {
-            modifyFile();
+            modifyFile(files, mapRule);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -52,16 +69,45 @@ public class ModifyAllFile {
     }
 
     /**
-     * TODO 添加方法注释.
+     * 构建规则Map.
+     * 
+     * @param rules
+     *            规则字符串
+     * @return Map
+     */
+    private static Map<String, String> buildRuleMap(String rules) {
+        Map<String, String> mapRule = new HashMap<>();
+        String[] arr = rules.split(";");
+        for (String keyVal : arr) {
+            if (!isNullOrEmpty(keyVal)) {
+                String[] spl = keyVal.split("\\|");
+                for (int i = 0; i < spl.length - 1; i++) {
+                    mapRule.put(spl[i], spl[spl.length - 1]);
+                }
+            }
+        }
+        mapRule.remove("");
+        return mapRule;
+    }
+
+    /**
+     * 按规则修改特定文件.
      * 
      * @throws Exception
      * 
      */
-    private static void modifyFile() throws Exception {
-        if (null == addNote || "".equals(addNote)) {
-            addNote = "////AutoAddNote////";
+    private static void modifyFile(List<String> filePaths, Map<String, String> mapRule) throws Exception {
+        if (isNullOrEmpty(mapRule) || isNullOrEmpty(filePaths)) {
+            return;
         }
+        String addNote = "";
         for (String path : filePaths) {
+            for (String suffix : mapRule.keySet()) {
+                if (path.endsWith(suffix)) {
+                    addNote = mapRule.get(suffix);
+                    break;
+                }
+            }
             LineNumberReader reader = new LineNumberReader(new InputStreamReader(new FileInputStream(path), encode));
             StringBuffer content = new StringBuffer();
             content.append(addNote);
@@ -88,36 +134,63 @@ public class ModifyAllFile {
      * 所有待转换文件绝对路径.
      * 
      * @param path
-     * @return
+     * @return 所有带转换文件路径
      */
-    private static void getAllFilePath(String path) {
+    private static List<String> getAllFilePath(String path, Set<String> suffixSet) {
+        /**
+         * 所有待转换文件绝对路径.
+         */
+        List<String> filePaths = new ArrayList<>();
         File root = new File(path);
         File[] files = root.listFiles();
         if (files == null) {
             filePaths.add(path);
-            return;
+            return filePaths;
         }
         for (File file : files) {
             if (file.isDirectory()) {
                 // 递归调用
-                getAllFilePath(file.getAbsolutePath());
+                List<String> list = getAllFilePath(file.getAbsolutePath(), suffixSet);
+                if (!isNullOrEmpty(list)) {
+                    filePaths.addAll(list);
+                }
                 // System.out.println(filePath + "目录下所有子目录及其文件" + file.getAbsolutePath());
             } else {
                 // System.out.println(filePath + "目录下所有文件" + file.getAbsolutePath());
-                for (String suf : suffix) {
+                for (String suf : suffixSet) {
                     if (file.getAbsolutePath().endsWith(suf)) {
                         filePaths.add(file.getAbsolutePath());
                     }
                 }
             }
         }
-
+        return filePaths;
     }
 
     /**
-     * 所有待转换文件绝对路径.
+     * 是否为null或空字符串或空集合.
+     * 
+     * @param param
+     *            参数
+     * @return bool
      */
-    static List<String> filePaths = new ArrayList<>();
+    @SuppressWarnings("rawtypes")
+    private static boolean isNullOrEmpty(Object param) {
+        if (param instanceof String) {
+            if (null == param || "".equals(((String) param).trim())) {
+                return true;
+            }
+        } else if (param instanceof List) {
+            if (null == param || ((List) param).isEmpty()) {
+                return true;
+            }
+        } else if (param instanceof Map) {
+            if (null == param || ((Map) param).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private static String encode = "utf-8";
 
