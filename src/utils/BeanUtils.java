@@ -15,7 +15,7 @@ import java.sql.Timestamp;
 import java.util.Date;
 
 /**
- * github.zxiaofan.com.
+ * github.zxiaofan.com/Javautils.
  * 
  * @author zxiaofan
  */
@@ -30,33 +30,53 @@ public class BeanUtils {
     }
 
     /**
-     * fullDeepCopy：source to target(target完全完全深复制为source).
+     * copy级别-原始数据不为null.
+     */
+    public static int copy_src_null = 1;
+
+    /**
+     * copy级别-原始数据不为null或empty.
+     */
+    public static int copy_src_nullOrEmpty = 2;
+
+    /**
+     * copy级别-目标数据不为null.
+     */
+    public static int copy_dest_null = 3;
+
+    /**
+     * copy级别-目标数据不为null或empty.
+     */
+    public static int copy_dest_nullOrEmpty = 4;
+
+    /**
+     * fullDeepCopy：source to dest(dest完全完全深复制为source).
      * 
      * @param source
      *            源实体类
-     * @param target
+     * @param dest
      *            目标实体类
      */
-    public static void copy(Object source, Object target) {
+    public static void copy(Object source, Object dest) {
         Field[] fields = source.getClass().getDeclaredFields();
         for (int i = 0, j = fields.length; i < j; i++) {
             String propertyName = fields[i].getName();
             Object propertyValue = getProperty(source, propertyName);
-            setProperty(target, propertyName, propertyValue);
+            setProperty(dest, propertyName, propertyValue);
         }
     }
 
     /**
-     * 按需复制source里的属性到target.
+     * 按需复制source里的属性到dest.
      * 
      * @param source
      *            源实体类
-     * @param target
+     * @param dest
      *            目标实体类
      * @param coverLevel
-     *            覆盖级别： 1:source_field != null; 2:source_field != null (&& !"".equals(source_field)); 3:target_field==null; 4:target_field==null(|| "".equals(target_field)); others:fullDeepCopy。
+     *            覆盖级别： 1:source_field != null; 2:source_field != null (&& !"".equals(source_field)); 3:dest_field==null; 4:dest_field==null(|| "".equals(dest_field)); others:fullDeepCopy。
      */
-    public static void copy(Object source, Object target, int coverLevel) {
+    public static void copy(Object source, Object dest, int coverLevel) {
         Field[] fields = source.getClass().getDeclaredFields();
         for (int i = 0, j = fields.length; i < j; i++) {
             String propertyName = fields[i].getName();
@@ -64,26 +84,26 @@ public class BeanUtils {
             switch (coverLevel) {
                 case 1:
                     if (getProperty(source, propertyName) != null) {
-                        setProperty(target, propertyName, propertyValue);
+                        setProperty(dest, propertyName, propertyValue);
                     }
                     break;
                 case 2:
                     if (!isNullOrEmpty(getProperty(source, propertyName))) {
-                        setProperty(target, propertyName, propertyValue);
+                        setProperty(dest, propertyName, propertyValue);
                     }
                     break;
                 case 3:
-                    if (null == getProperty(target, propertyName)) {
-                        setProperty(target, propertyName, propertyValue);
+                    if (null == getProperty(dest, propertyName)) {
+                        setProperty(dest, propertyName, propertyValue);
                     }
                     break;
                 case 4:
-                    if (isNullOrEmpty(getProperty(target, propertyName))) {
-                        setProperty(target, propertyName, propertyValue);
+                    if (isNullOrEmpty(getProperty(dest, propertyName))) {
+                        setProperty(dest, propertyName, propertyValue);
                     }
                     break;
                 default:
-                    setProperty(target, propertyName, propertyValue);
+                    setProperty(dest, propertyName, propertyValue);
                     break;
             }
         }
