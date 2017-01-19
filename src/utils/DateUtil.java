@@ -39,11 +39,6 @@ public class DateUtil {
     /**
      * 添加字段注释.
      */
-    private static DateFormat formatDefault = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-    /**
-     * 添加字段注释.
-     */
     public static String format = "yyyy-MM-dd HH:mm:ss";
 
     /**
@@ -100,11 +95,18 @@ public class DateUtil {
             return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         }
     };
-    static {
-        mapSign.put("上午|下午", "a");
-        mapSign.put("星期[一二三四五六日天七]", "E");
-        mapSign.put("CST", "z");
-        mapSign.put("公元[前]?", "G");
+
+    /**
+     * 初始化DateFormat标志位.
+     * 
+     */
+    private static void initMapSign() {
+        if (mapSign.isEmpty()) {
+            mapSign.put("上午|下午", "a");
+            mapSign.put("星期[一二三四五六日天七]", "E");
+            mapSign.put("CST", "z");
+            mapSign.put("公元[前]?", "G");
+        }
     }
 
     /**
@@ -131,7 +133,7 @@ public class DateUtil {
         if (null == date) {
             return null;
         }
-        if (null == dateFormat) { // 尽管dateFormat为null将编译报错，因为format有两个方法（2 param），依旧判断处理
+        if (null == dateFormat) { // 尽管dateFormat为null将编译报错，因为本工具类format有两个方法（2 param），依旧判断处理
             return threadLocal.get().format(date);
         }
         return dateFormat.format(date);
@@ -163,14 +165,10 @@ public class DateUtil {
      * @param source
      *            source
      * @return Date
+     * @throws ParseException
      */
-    public static Date parse(String source) {
-        try {
-            return threadLocal.get().parse(source);
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-        return null;
+    public static Date parse(String source) throws ParseException {
+        return threadLocal.get().parse(source);
     }
 
     /**
@@ -181,18 +179,14 @@ public class DateUtil {
      * @param time
      *            time
      * @return Date
+     * @throws ParseException
      */
-    public static Date parse(String time, DateFormat dateFormat) {
-        if (null == time) {
+    public static Date parse(String time, DateFormat dateFormat) throws ParseException {
+        if (isNullOrEmpty(time) || null == dateFormat) {
             return null;
         }
-        try {
-            Date date = dateFormat.parse(time);
-            return date;
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-        return null;
+        Date date = dateFormat.parse(time);
+        return date;
     }
 
     /**
@@ -203,9 +197,10 @@ public class DateUtil {
      * @param dateFormat
      *            dateFormat
      * @return Date
+     * @throws ParseException
      */
-    public static Date parse(String time, String dateFormat) {
-        if (null == time) {
+    public static Date parse(String time, String dateFormat) throws ParseException {
+        if (isNullOrEmpty(time) || isNullOrEmpty(dateFormat)) {
             return null;
         }
         DateFormat df = null;
@@ -233,9 +228,10 @@ public class DateUtil {
      *             ParseException
      */
     public static Date parseAuto(String time) throws ParseException {
-        if (null == time) {
+        if (isNullOrEmpty(time)) {
             return null;
         }
+        initMapSign();
         time = time.trim();
         String formatPattern = "";
         if (time.matches("[\\d]+")) { // 纯数字
@@ -266,6 +262,17 @@ public class DateUtil {
         DateFormat df = new SimpleDateFormat(formatPattern);
         Date date = df.parse(time);
         return date;
+    }
+
+    /**
+     * 是否为空或"".
+     * 
+     * @param param
+     *            param
+     * @return
+     */
+    private static boolean isNullOrEmpty(String param) {
+        return null == param || "".equals(param.trim());
     }
 
     /**
@@ -331,9 +338,8 @@ public class DateUtil {
                 cal.set(Calendar.SECOND, 0);
                 break;
             case SECOND: // 保留到 SECOND
-                threadLocal.set(formatDefault);
-                date = parse(threadLocal.get().format(date), threadLocal.get());
-                return date;
+                cal.set(Calendar.MILLISECOND, 0);
+                break;
             default:
                 break;
         }
@@ -423,17 +429,29 @@ public class DateUtil {
      * @param time
      *            time
      * @return date
+     * @throws ParseException
      */
-    public static Date dateToHms(Date date, String time) {
-        if (null == date || null == time) {
+    public static Date dateToHms(Date date, String time) throws ParseException {
+        if (null == date || null == time || "".equals(time.trim())) {
             return date;
         }
-        threadLocal.set(formatDefault);
-        String dateStr = threadLocal.get().format(date);
-        dateStr = dateStr.substring(0, 10);
+        StringBuffer timeBuf = new StringBuffer();
+        DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+        String dateStr = format.format(date);
+        timeBuf.append(dateStr).append(" ");
         time = time.trim();
-        dateStr += " " + time;
-        date = parse(dateStr, threadLocal.get());
+        while (!time.matches(".*\\d")) {
+            time = time.substring(0, time.length() - 1);
+        }
+        timeBuf.append(time);
+        if (time.matches("\\d{1,2}:\\d{1,2}:\\d{1,2}")) {
+            timeBuf.append(".0");
+        } else if (time.matches("\\d{1,2}:\\d{1,2}")) {
+            timeBuf.append(":00.0");
+        } else if (time.matches("\\d{1,2}")) {
+            timeBuf.append(":00:00.0");
+        }
+        date = parse(timeBuf.toString(), formatyMdS);
         return date;
     }
 
