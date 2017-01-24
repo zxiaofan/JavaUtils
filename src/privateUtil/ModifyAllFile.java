@@ -10,7 +10,7 @@ package privateUtil;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -33,6 +33,8 @@ public class ModifyAllFile {
      * 支持多条规则（以;分隔，每条规则以|分隔后缀名和增加内容）（a|b|c表示以a或b后后缀的文件将在文件头增加c）.
      */
     static String rule = ".java||////AutoModify -By zxiaofan////;.jsp|<!-- AutoModify -->";
+
+    private static String encode = "utf-8";
 
     public static void main(String[] args) {
         System.out.println("请输入待修改的文件（夹）的绝对路径：");
@@ -108,7 +110,8 @@ public class ModifyAllFile {
                     break;
                 }
             }
-            LineNumberReader reader = new LineNumberReader(new InputStreamReader(new FileInputStream(path), encode));
+            FileInputStream inputStream = new FileInputStream(path);
+            LineNumberReader reader = new LineNumberReader(new InputStreamReader(inputStream, encode));
             StringBuffer content = new StringBuffer();
             content.append(addNote);
             String s = reader.readLine();
@@ -119,15 +122,59 @@ public class ModifyAllFile {
             }
             content.append("\r\n");
             reader.close();
-            try {
-                FileWriter fw = new FileWriter(path);
-                fw.write(content.toString());
-                fw.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            // try {
+            // FileWriter fw = new FileWriter(path);
+            // fw.write(content.toString());
+            // fw.close();
+            // } catch (IOException e) {
+            // e.printStackTrace();
+            // }
+            writeStringToFile(path, content.toString(), encode);
         }
 
+    }
+
+    /**
+     * 将字符串数据存于本地(FileUtil工具类).
+     * 
+     * @param fileName
+     *            文件名
+     * @param data
+     *            数据
+     * @param encode
+     *            编码（可为null）
+     * @throws IOException
+     *             IO异常
+     */
+    private static void writeStringToFile(String fileName, String data, String encode) throws IOException {
+        FileOutputStream output = null;
+        File file = new File(fileName);
+        if (file.exists()) {
+            if (file.isDirectory())
+                throw new IOException("File '" + file + "' exists but is a directory");
+            if (!file.canWrite())
+                throw new IOException("File '" + file + "' cannot be written to");
+        } else {
+            File parent = file.getParentFile();
+            if (parent != null && !parent.exists() && !parent.mkdirs())
+                throw new IOException("File '" + file + "' could not be created");
+        }
+        try {
+            output = new FileOutputStream(file);
+            if (data != null)
+                if (encode == null)
+                    output.write(data.getBytes());
+                else
+                    output.write(data.getBytes(encode));
+        } finally {
+            if (null != output) {
+                try {
+                    output.close();
+                } catch (IOException e) {
+                    System.out.print("");
+                }
+            }
+        }
     }
 
     /**
@@ -191,7 +238,5 @@ public class ModifyAllFile {
         }
         return false;
     }
-
-    private static String encode = "utf-8";
 
 }
