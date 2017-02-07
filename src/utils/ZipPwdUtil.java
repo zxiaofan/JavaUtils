@@ -40,7 +40,7 @@ public class ZipPwdUtil {
      * 
      * 若抛异常（java.security.InvalidKeyException: Illegal key size），
      * 
-     * 在官方网站下载JCE无限制权限策略文件解决JDK不兼容问题。
+     * 在官方网站下载JCE无限制权限策略文件解决JDK不兼容问题（亦可从工程lib包下载）。
      * 
      * JDK7的下载地址: http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
      * 
