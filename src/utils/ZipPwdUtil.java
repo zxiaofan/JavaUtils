@@ -38,6 +38,16 @@ public class ZipPwdUtil {
     /**
      * 校验xx.7Z压缩包的密码是否正确.
      * 
+     * 若抛异常（java.security.InvalidKeyException: Illegal key size），
+     * 
+     * 在官方网站下载JCE无限制权限策略文件解决JDK不兼容问题。
+     * 
+     * JDK7的下载地址: http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
+     * 
+     * JDK8的下载地址: http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html
+     * 
+     * 将解压后的local_policy.jar和US_export_policy.jar放到%JDK_HOME%\jre\lib\security目录和%JRE_HOME%\lib\security目录下覆盖原文件即可。
+     * 
      * @param path7ZFile
      *            7Z压缩包文件路径
      * @param pwd
