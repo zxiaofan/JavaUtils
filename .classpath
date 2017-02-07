@@ -7,6 +7,9 @@
 	<classpathentry kind="lib" path="lib/org.springframework.context-3.1.1.RELEASE.jar"/>
 	<classpathentry kind="lib" path="lib/org.springframework.beans-3.1.1.RELEASE.jar"/>
 	<classpathentry kind="lib" path="lib/org.springframework.core-3.1.1.RELEASE.jar"/>
+	<classpathentry kind="lib" path="lib/xz-1.6.jar"/>
+	<classpathentry kind="lib" path="lib/commons-compress-1.9.jar" sourcepath="lib/commons-compress-1.9-sources.jar"/>
+	<classpathentry kind="lib" path="lib/commons-compress-1.9-sources.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

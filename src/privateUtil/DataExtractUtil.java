@@ -214,7 +214,7 @@ public class DataExtractUtil {
 
     private static SimpleDateFormat formatd = new SimpleDateFormat("yyyyMMdd");
 
-    static List<String> listErrTable = Collections.synchronizedList(new ArrayList<>()); // 未提取到数据的表
+    static List<String> listErrTable = Collections.synchronizedList(new ArrayList<String>()); // 未提取到数据的表
 
     private static ExecutorService service = Executors.newFixedThreadPool(20);
 

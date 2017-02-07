@@ -34,6 +34,8 @@ By github.com/zxiaofan(https://github.com/zxiaofan/JavaUtils)
 　　getSpecificLine超大文本获取指定内容行;readFileToString读取本地文件为字符串;writeStringToFile将字符串数据存于本地  
 **10、PrintUtil**  
 　　控制台输出工具类，统一控制程序控制台输出  
+**11、ZipPwdUtil**  
+　　压缩文件密码破解工具类（暂支持7Z密码校验，持续更新ing）  
 
 # passwordUtil
 2016-08-29（新增加解密工具类）  
