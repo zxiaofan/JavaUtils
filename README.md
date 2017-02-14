@@ -36,6 +36,8 @@ By github.com/zxiaofan(https://github.com/zxiaofan/JavaUtils)
 　　控制台输出工具类，统一控制程序控制台输出  
 **11、ZipPwdUtil**  
 　　压缩文件密码破解工具类（暂支持7Z密码校验，持续更新ing）  
+**12、RedisUtil**  
+　　Redis工具类，基于redis2.9（暂支持get/set，待更新ing）  
 
 # passwordUtil
 2016-08-29（新增加解密工具类）  

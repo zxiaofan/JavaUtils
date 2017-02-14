@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="test/JavaUtils"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/gson-2.0.jar"/>
 	<classpathentry kind="lib" path="lib/jsoup-1.8.3.jar"/>
@@ -10,6 +11,10 @@
 	<classpathentry kind="lib" path="lib/xz-1.6.jar"/>
 	<classpathentry kind="lib" path="lib/commons-compress-1.9.jar" sourcepath="lib/commons-compress-1.9-sources.jar"/>
 	<classpathentry kind="lib" path="lib/commons-compress-1.9-sources.jar"/>
+	<classpathentry kind="lib" path="lib/jedis-2.9.0-sources.jar"/>
+	<classpathentry kind="lib" path="lib/jedis-2.9.0.jar" sourcepath="lib/jedis-2.9.0-sources.jar"/>
+	<classpathentry kind="lib" path="lib/commons-pool2-2.4.2-sources.jar"/>
+	<classpathentry kind="lib" path="lib/commons-pool2-2.4.2.jar" sourcepath="lib/commons-pool2-2.4.2-sources.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
