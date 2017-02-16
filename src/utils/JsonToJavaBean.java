@@ -50,7 +50,7 @@ public class JsonToJavaBean {
 
     private static boolean defaultInteger = true; // 默认使用Integer代替int
 
-    private static String packagePath = "csdn"; // package子路径
+    private static String packagePath = ""; // package子路径
 
     private static String outputPath = "d:\\JsonToJavaBean\\"; // 输出路径
 
@@ -445,6 +445,11 @@ public class JsonToJavaBean {
             m = p.matcher(str);
             str = m.replaceAll(":\"" + typeString + "\"");
             str = str.replaceAll("/", "_").replaceAll("“|”", "\"");
+            p = Pattern.compile("(?<re1>:null)(,|})");
+            m = p.matcher(str);
+            if (m.find()) { // 处理某些不标准json{"PaySuccess":null,"Msg":null}
+                str = str.replaceAll(m.group("re1"), ":\"" + typeString + "\"");
+            }
         }
         return str;
     }
