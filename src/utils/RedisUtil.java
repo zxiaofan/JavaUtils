@@ -15,6 +15,8 @@ import redis.clients.jedis.JedisPoolConfig;
 /**
  * Redis工具类，基于redis2.9.
  * 
+ * get/set等加锁避免多线程时先获取Jedis但却后执行Redis操作.
+ * 
  * @author zxiaofan
  */
 public class RedisUtil {
@@ -88,11 +90,40 @@ public class RedisUtil {
      * @throws Exception
      *             Exception
      */
-    public static String set(String key, String value) throws Exception {
+    public synchronized static String set(String key, String value) throws Exception {
         Jedis jedis = null;
         try {
             jedis = getJedis();
             return jedis.set(key, value);
+        } finally {
+            close(jedis);
+        }
+    }
+
+    /**
+     * 向redis存入key-value,并设置过期时间
+     * 
+     * @param key
+     *            key
+     * @param value
+     *            value
+     * @param expire
+     *            过期时间
+     * @return 成功返回OK，失败返回 0
+     * @throws Exception
+     *             Exception
+     */
+    public synchronized static String set(String key, String value, int expire) throws Exception {
+        Jedis jedis = null;
+        try {
+            jedis = getJedis();
+            String statusCode;
+            if (expire == 0) {
+                statusCode = jedis.set(key, value);
+            } else {
+                statusCode = jedis.setex(key, expire, value);
+            }
+            return statusCode;
         } finally {
             close(jedis);
         }
@@ -107,11 +138,49 @@ public class RedisUtil {
      * @throws Exception
      *             Exception
      */
-    public static String get(String key) throws Exception {
+    public synchronized static String get(String key) throws Exception {
         Jedis jedis = null;
         try {
             jedis = getJedis();
             return jedis.get(key);
+        } finally {
+            close(jedis);
+        }
+    }
+
+    /**
+     * 删除key.
+     * 
+     * @param key
+     *            业务key
+     * @return String 值
+     * @throws Exception
+     *             Exception
+     */
+    public synchronized static Long del(String key) throws Exception {
+        Jedis jedis = null;
+        try {
+            jedis = getJedis();
+            return jedis.del(key);
+        } finally {
+            close(jedis);
+        }
+    }
+
+    /**
+     * 批量删除key.
+     * 
+     * @param keys
+     *            业务keys
+     * @return String 值
+     * @throws Exception
+     *             Exception
+     */
+    public synchronized static Long del(String[] keys) throws Exception {
+        Jedis jedis = null;
+        try {
+            jedis = getJedis();
+            return jedis.del(keys);
         } finally {
             close(jedis);
         }
@@ -139,7 +208,7 @@ public class RedisUtil {
      * @throws Exception
      *             Exception
      */
-    public void expire(String key, int seconds) throws Exception {
+    public synchronized void expire(String key, int seconds) throws Exception {
         if (seconds <= 0) {
             return;
         }
