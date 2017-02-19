@@ -47,4 +47,6 @@ By github.com/zxiaofan(https://github.com/zxiaofan/JavaUtils)
 　　DES、DES3加解密。  
 **3、MD5**  
 　　MD5。  
+**4、DictionaryUtil**  
+　　MD5。  
 
