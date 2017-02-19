@@ -48,5 +48,5 @@ By github.com/zxiaofan(https://github.com/zxiaofan/JavaUtils)
 **3、MD5**  
 　　MD5。  
 **4、DictionaryUtil**  
-　　MD5。  
+　　字典生成器，支持字典生成时实时校验密码的正确性。  
 
