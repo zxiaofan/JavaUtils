@@ -29,8 +29,8 @@ public class ZipPwdUtil {
     public static void main(String[] args) throws IOException {
         // Scanner scanner = new Scanner(System.in);
         // String zipPath = scanner.nextLine();
-        String zipPath = "D:\\7z.7z";
-        String pwd = "zxiaofan.com";
+        String zipPath = "e:\\123.7z";
+        String pwd = "79";
         boolean bool = validatePwd(zipPath, pwd);
         System.out.println(bool);
     }
@@ -67,11 +67,15 @@ public class ZipPwdUtil {
         try {
             @SuppressWarnings("resource")
             SevenZFile sevenZFile = new SevenZFile(file, pwd.getBytes(Charset.forName("UTF-16LE")));
-            while (null != sevenZFile.getNextEntry()) {
+            SevenZArchiveEntry entry = null;
+            while (null != (entry = sevenZFile.getNextEntry())) {
                 byte[] content = new byte[2]; // 流输出
                 try {
-                    sevenZFile.read(content, 0, 2);
-                } catch (IOException e) { // 读取数据异常，说明密码错误
+                    // sevenZFile.read(content, 0, 2);
+                    // sevenZFile.read(content, (int) (entry.getSize() - 2), (int) entry.getSize());
+                    sevenZFile.read(content, 0, (int) entry.getSize());
+                    // sevenZFile.read(content, 0, 2);
+                } catch (Exception e) { // 读取数据异常，说明密码错误
                     return false;
                 }
             }
