@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 public class PrintUtil {
 
     /**
-     * 控制台输出级别（false-0不输出，error-1输出异常【默认】，info-2输出重要信息，debug-3输出所有）.
+     * 控制台输出级别（false-0不输出，error-3输出异常【默认】，info-2输出重要信息及异常，debug-1输出所有）.
      */
     private static String console;
 
@@ -81,12 +81,22 @@ public class PrintUtil {
     };
 
     /**
-     * 重要信息.
+     * 直接输出所有信息.
      * 
      * @param param
      *            param
      */
     public static void print(Object param) {
+        dealPrint(param);
+    }
+
+    /**
+     * 重要信息.
+     * 
+     * @param param
+     *            param
+     */
+    public static void printInfo(Object param) {
         if (level >= 2) {
             threadLevelDesc.set(levelInfo);
             dealPrint(param);
@@ -100,7 +110,7 @@ public class PrintUtil {
      *            param
      */
     public static void printError(Object param) {
-        if (level >= 1) {
+        if (level >= 3) {
             threadLevelDesc.set(levelError);
             dealPrint(param);
         }
@@ -113,7 +123,7 @@ public class PrintUtil {
      *            param
      */
     public static void printDebug(Object param) {
-        if (level >= 3) {
+        if (level >= 1) {
             threadLevelDesc.set(levelDebug);
             dealPrint(param);
         }
@@ -140,7 +150,7 @@ public class PrintUtil {
      *            字符串
      */
     private static void print(String s) {
-        System.out.println(threadLevelDesc.get() + ":[" + threadLocal.get().format(new Date()) + "]" + s);
+        System.out.println("[" + threadLevelDesc.get() + "]" + ":[" + threadLocal.get().format(new Date()) + "]" + s);
         threadLocal.remove();
         threadLevelDesc.remove();
     }
@@ -178,20 +188,20 @@ public class PrintUtil {
      * 初始化日志级别.
      * 
      */
-    private static void initLevel() {
+    private static synchronized void initLevel() {
         if (-1 != level) {
             return;
         }
         if (null == console || "".equals(console) || levelError.equals(console)) {
-            level = 1;
+            level = 3;
         } else if ("false".equals(console)) {
             level = 0;
         } else if (levelInfo.equals(console)) {
             level = 2;
         } else if (levelDebug.equals(console)) {
-            level = 3;
-        } else {
             level = 1;
+        } else {
+            level = 3;
         }
     }
 
