@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,12 @@ public class ModifyAllFile {
     /**
      * 支持多条规则（以;分隔，每条规则以|分隔后缀名和增加内容）（a|b|c表示以a或b后后缀的文件将在文件头增加c）.
      */
-    static String rule = ".java||////AutoModify -By zxiaofan////;.jsp|<!-- AutoModify -->";
+    static String rule = ".java||////AutoModify -By zxiaofan////;.jsp|.xml|<!-- AutoModify -By zxiaofan-->;";
+
+    /**
+     * 在末尾追加注释.
+     */
+    static List<String> appendInEnd = Arrays.asList(".xml");
 
     private static String encode = "utf-8";
 
@@ -103,9 +109,11 @@ public class ModifyAllFile {
             return;
         }
         String addNote = "";
+        String fileSuffix = "";
         for (String path : filePaths) {
             for (String suffix : mapRule.keySet()) {
                 if (path.endsWith(suffix)) {
+                    fileSuffix = suffix;
                     addNote = mapRule.get(suffix);
                     break;
                 }
@@ -113,12 +121,18 @@ public class ModifyAllFile {
             FileInputStream inputStream = new FileInputStream(path);
             LineNumberReader reader = new LineNumberReader(new InputStreamReader(inputStream, encode));
             StringBuffer content = new StringBuffer();
-            content.append(addNote);
+            if (!appendInEnd.contains(fileSuffix)) {
+                content.append(addNote);
+                content.append("\r\n");
+            }
             String s = reader.readLine();
             while (s != null && !"null".equals(s)) {
-                content.append("\r\n");
                 content.append(s);
+                content.append("\r\n");
                 s = reader.readLine();
+            }
+            if (appendInEnd.contains(fileSuffix)) {
+                content.append(addNote);
             }
             content.append("\r\n");
             reader.close();
