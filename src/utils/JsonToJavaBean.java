@@ -26,6 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 /**
  * 最近需将大量json转换为对应的JavaBean，网上有诸多在线转换工具，但是由于[1:无法直接生成JavaBean;2转换不够准确;3:公司对代码要求CheckStyle]，故自己写个转换工具
@@ -226,7 +227,14 @@ public class JsonToJavaBean {
      * @param className
      */
     private static void buildOrignBean(String json, List<Bean> beans, String className) {
-        Map<String, Object> map = gson.fromJson(json, Map.class);
+        Map<String, Object> map = null;
+        try {
+            map = gson.fromJson(json, Map.class);
+        } catch (JsonSyntaxException e) {
+            System.out.println(json);
+            e.printStackTrace();
+            System.exit(0);
+        }
         Bean beanParent = new Bean();
         beanParent.setFieldName(className);
         beans.add(beanParent);
@@ -444,7 +452,7 @@ public class JsonToJavaBean {
             p = Pattern.compile(":\".*?\"(?=[,}])");
             m = p.matcher(str);
             str = m.replaceAll(":\"" + typeString + "\"");
-            str = str.replaceAll("/", "_").replaceAll("“|”", "\"");
+            str = str.replaceAll("/", "_").replaceAll("“|”", "\"").replaceAll("（|【", "[").replaceAll("）|】", "]").replaceAll("，", ",");
             p = Pattern.compile("(?<re1>:null)(,|})");
             m = p.matcher(str);
             if (m.find()) { // 处理某些不标准json{"PaySuccess":null,"Msg":null}
