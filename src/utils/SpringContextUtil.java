@@ -3,7 +3,6 @@ package utils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.stereotype.Component;
 
 /**
  * @author zxiaofan
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Component;
  * 
  *         private static IPrintService printService=(IPrintService) SpringContextUtil.getBean("printServiceImpl");
  */
-@Component
 public class SpringContextUtil implements ApplicationContextAware {
 
     /**
@@ -26,34 +24,35 @@ public class SpringContextUtil implements ApplicationContextAware {
     /**
      * Spring应用上下文环境.
      */
-    private static ApplicationContext applicationContext;
+    private static ApplicationContext context;
 
     /**
      * {@inheritDoc}.实现ApplicationContextAware接口的回调方法，设置上下文环境.
      */
+    @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        SpringContextUtil.applicationContext = applicationContext;
+        context = applicationContext;
     }
 
     /**
-     * .
+     * 获得ApplicationContext.
      * 
      * @return applicationContext
      */
     public static ApplicationContext getApplicationContext() {
-        return applicationContext;
+        return context;
     }
 
     /**
-     * 根据bean名字获取bean实例,重写了bean方法，起主要作用.
+     * 根据bean名字获取bean实例.
      * 
      * @param beanName
      *            beanName默认为class名字（首字母小写），亦可@Service(value="printService")
-     * @return Bean
+     * @return Bean（可能需要强转）
      * @throws BeansException
      *             BeansException
      */
     public static Object getBean(String beanName) throws BeansException {
-        return applicationContext.getBean(beanName);
+        return context.getBean(beanName);
     }
 }
