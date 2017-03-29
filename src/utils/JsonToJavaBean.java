@@ -1,3 +1,4 @@
+
 /*
  * 文件名：JsonToJavaBean.java
  * 版权：Copyright 2007-2016 zxiaofan.com. Co. Ltd. All Rights Reserved. 
@@ -18,10 +19,12 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -134,9 +137,14 @@ public class JsonToJavaBean {
             buffer.append(importJar);
             buffer.append(author);
             buffer.append("public class " + fieldVos.get(0).getFieldNameUpper() + " {" + rn);
+            Set<Bean> setBean = new HashSet<>();
             // 字段定义
             for (int i = 1; i < fieldVos.size(); i++) {
                 Bean vo = fieldVos.get(i);
+                if (setBean.contains(vo)) {
+                    continue; // 字段去重
+                }
+                setBean.add(vo);
                 if (addNote) {
                     buffer.append(desc1);
                     buffer.append(vo.getFieldDesc());
@@ -229,7 +237,7 @@ public class JsonToJavaBean {
     private static void buildOrignBean(String json, List<Bean> beans, String className) {
         Map<String, Object> map = null;
         try {
-            map = gson.fromJson(json, Map.class);
+            map = (Map<String, Object>) fromJson(json, Map.class);
         } catch (JsonSyntaxException e) {
             System.out.println(json);
             e.printStackTrace();
@@ -277,7 +285,7 @@ public class JsonToJavaBean {
                     bean.setFieldName(k);
                     bean.setFieldType("List<" + CaseConversion(k, false) + ">");
                     // System.out.println(childJson);
-                    List<Object> childList = gson.fromJson(childJson, List.class);
+                    List<Object> childList = (List<Object>) fromJson(childJson, List.class);
                     List<Bean> newBeans = new ArrayList<>();
                     if (!childList.toString().startsWith("[{")) { // 匹配特殊格式["ANY"],Expected BEGIN_OBJECT but was STRING
                         bean.setFieldType(ObjType.ListString);
@@ -293,6 +301,25 @@ public class JsonToJavaBean {
         }
         fields.put(className, beans);
 
+    }
+
+    /**
+     * json序列化.
+     * 
+     * @param json
+     *            josn
+     * @return Object
+     */
+    private static Object fromJson(String json, Class type) {
+        Object obj = null;
+        try {
+            obj = gson.fromJson(json, type);
+        } catch (JsonSyntaxException e) {
+            e.printStackTrace();
+            System.out.println(json);
+            System.exit(0);
+        }
+        return obj;
     }
 
     /**
@@ -452,7 +479,8 @@ public class JsonToJavaBean {
             p = Pattern.compile(":\".*?\"(?=[,}])");
             m = p.matcher(str);
             str = m.replaceAll(":\"" + typeString + "\"");
-            str = str.replaceAll("/", "_").replaceAll("“|”", "\"").replaceAll("（|【", "[").replaceAll("）|】", "]").replaceAll("，", ",");
+            str = str.replaceAll("://", ""); // 避免json中含有url引发json转换异常
+            str = str.replaceAll("/", "").replaceAll("“|”", "\"").replaceAll("（|【", "[").replaceAll("）|】", "]").replaceAll("，", ",");
             p = Pattern.compile("(?<re1>:null)(,|})");
             m = p.matcher(str);
             if (m.find()) { // 处理某些不标准json{"PaySuccess":null,"Msg":null}
