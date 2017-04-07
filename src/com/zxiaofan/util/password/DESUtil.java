@@ -1,4 +1,4 @@
-package passwordUtil;
+package com.zxiaofan.util.password;
 
 import java.security.Key;
 import java.security.SecureRandom;

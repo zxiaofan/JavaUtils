@@ -1,4 +1,4 @@
-package passwordUtil;
+package com.zxiaofan.util.password;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

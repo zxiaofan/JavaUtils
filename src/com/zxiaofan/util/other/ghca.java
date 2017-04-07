@@ -1,4 +1,4 @@
-package utils;
+package com.zxiaofan.util.other;
 
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;

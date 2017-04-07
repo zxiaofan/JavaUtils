@@ -3,7 +3,7 @@
  * @author zxiaofan
  *
  */
-package privateUtil;
+package com.zxiaofan.util.privateUtil;
 /**
  * 私有工具类
  * 

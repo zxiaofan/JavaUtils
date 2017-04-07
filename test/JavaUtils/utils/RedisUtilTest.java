@@ -3,6 +3,8 @@ package utils;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.zxiaofan.util.rpc.RedisUtil;
+
 import junit.framework.TestCase;
 
 /**

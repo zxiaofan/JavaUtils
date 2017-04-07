@@ -1,4 +1,4 @@
-package privateUtil;
+package com.zxiaofan.util.privateUtil;
 
 import java.io.File;
 import java.io.FileOutputStream;

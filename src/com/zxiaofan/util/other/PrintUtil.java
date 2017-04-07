@@ -6,7 +6,7 @@
  * 修改时间：2016年11月23日
  * 修改内容：新增
  */
-package utils;
+package com.zxiaofan.util.other;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;

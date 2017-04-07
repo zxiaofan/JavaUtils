@@ -14,7 +14,9 @@ import java.util.List;
 
 import org.junit.Test;
 
-import utils.ZipPwdUtil;
+import com.zxiaofan.util.other.ZipPwdUtil;
+import com.zxiaofan.util.password.Check;
+import com.zxiaofan.util.password.DictionaryUtil;
 
 /**
  * 
@@ -27,7 +29,7 @@ public class DictionaryUtilTest {
 
     static int lengthMax = 8;
 
-    List<String> param = new ArrayList<>(Arrays.asList("z", "x", "f", "c"));
+    List<String> params = new ArrayList<>(Arrays.asList("z", "x", "f", "c"));
 
     /**
      * 校验器myCheck实时校验.
@@ -35,9 +37,9 @@ public class DictionaryUtilTest {
     @Test
     public void testValidate() {
         for (int i = 0; i < 10; i++) {
-            param.add(i + "");
+            params.add(i + "");
         }
-        DictionaryUtil.validate(param, lengthMin, lengthMax, myCheck);
+        DictionaryUtil.validate(params, lengthMin, lengthMax, myCheck);
     }
 
     /**
@@ -46,7 +48,7 @@ public class DictionaryUtilTest {
      */
     @Test
     public void testBuildAll() {
-        List<String> result = DictionaryUtil.buildAll(param, 3, 3);
+        List<String> result = DictionaryUtil.buildAll(params, 3, 3);
         System.out.println(result.size() + ":" + result.toString());
     }
 
@@ -58,7 +60,7 @@ public class DictionaryUtilTest {
          * {@inheritDoc}.
          */
         @Override
-        boolean execute(String param) {
+        protected boolean execute(String param) {
             if (ZipPwdUtil.validatePwd(path7ZFile, param)) {
                 return true;
             }

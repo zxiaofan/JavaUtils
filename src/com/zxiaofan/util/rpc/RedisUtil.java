@@ -6,7 +6,7 @@
  * 修改时间：2017年2月8日
  * 修改内容：新增
  */
-package utils;
+package com.zxiaofan.util.rpc;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;

@@ -6,7 +6,7 @@
  * 修改时间：2017年2月5日
  * 修改内容：新增
  */
-package utils;
+package com.zxiaofan.util.other;
 
 import java.io.BufferedOutputStream;
 import java.io.File;

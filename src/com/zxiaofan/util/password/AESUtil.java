@@ -1,5 +1,5 @@
 
-package passwordUtil;
+package com.zxiaofan.util.password;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
