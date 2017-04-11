@@ -39,47 +39,47 @@ public class DateUtil {
     /**
      * 添加字段注释.
      */
-    public static String format = "yyyy-MM-dd HH:mm:ss";
+    public static final String ENUM_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     /**
      * 添加字段注释.
      */
-    public static String formatyMd = "yyyy-MM-dd";
+    public static final String ENUM_FORMAT_YMD = "yyyy-MM-dd";
 
     /**
      * 添加字段注释.
      */
-    public static String formatyMdS = "yyyy-MM-dd HH:mm:ss.S";
+    public static final String ENUM_FORMAT_YMDS = "yyyy-MM-dd HH:mm:ss.S";
 
     /**
      * 添加字段注释.
      */
-    public static String formatslash = "yyyy/MM/dd HH:mm:ss";
+    public static final String ENUM_FORMAT_SLASH = "yyyy/MM/dd HH:mm:ss";
 
     /**
      * 添加字段注释.
      */
-    public static String formatyMdSslash = "yyyy/MM/dd HH:mm:ss.S";
+    public static final String ENUM_FORMAT_YMDS_SLASH = "yyyy/MM/dd HH:mm:ss.S";
 
     /**
      * 添加字段注释.
      */
-    public static final String DAY = "day"; // 粒度级别
+    public static final String LEVEL_DAY = "day"; // 粒度级别
 
     /**
      * 添加字段注释.
      */
-    public static final String HOUR = "hour";
+    public static final String LEVEL_HOUR = "hour";
 
     /**
      * 添加字段注释.
      */
-    public static final String MINUTE = "minute";
+    public static final String LEVEL_MINUTE = "minute";
 
     /**
      * 添加字段注释.
      */
-    public static final String SECOND = "second";
+    public static final String LEVEL_SECOND = "second";
 
     /**
      * 日期特殊字符对应.
@@ -87,12 +87,22 @@ public class DateUtil {
     private static Map<String, String> mapSign = new HashMap<>();
 
     /**
-     * 使用ThreadLocal解决SimpleDateFormat不同步问题.
+     * 使用ThreadLocal保证SimpleDateFormat线程安全.
      */
     private static ThreadLocal<DateFormat> threadLocal = new ThreadLocal<DateFormat>() {
         @Override
         protected DateFormat initialValue() {
             return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        }
+    };
+
+    /**
+     * 使用ThreadLocal保证SimpleDateFormat线程安全.
+     */
+    private static ThreadLocal<DateFormat> threadLocalYMd = new ThreadLocal<DateFormat>() {
+        @Override
+        protected DateFormat initialValue() {
+            return new SimpleDateFormat("yyyy-MM-dd");
         }
     };
 
@@ -121,22 +131,14 @@ public class DateUtil {
     }
 
     /**
-     * 指定格式格式化日期.
+     * 常规日期格式yyyy-MM-dd.
      * 
      * @param date
      *            date
-     * @param dateFormat
-     *            dateFormat
      * @return time
      */
-    public static String format(Date date, DateFormat dateFormat) {
-        if (null == date) {
-            return null;
-        }
-        if (null == dateFormat) { // 尽管dateFormat为null将编译报错，因为本工具类format有两个方法（2 param），依旧判断处理
-            return threadLocal.get().format(date);
-        }
-        return dateFormat.format(date);
+    public static String formatYMd(Date date) {
+        return threadLocalYMd.get().format(date);
     }
 
     /**
@@ -152,41 +154,34 @@ public class DateUtil {
         if (null == date) {
             return null;
         }
-        if (null == dateFormat) {
-            return threadLocal.get().format(date);
-        }
         DateFormat df = new SimpleDateFormat(dateFormat);
         return df.format(date);
     }
 
     /**
-     * parse时间yyyy-MM-dd HH:mm:ss.
+     * parse时间(yyyy-MM-dd HH:mm:ss).
      * 
      * @param source
      *            source
      * @return Date
      * @throws ParseException
+     *             ParseException
      */
     public static Date parse(String source) throws ParseException {
         return threadLocal.get().parse(source);
     }
 
     /**
-     * 格式化时间.
+     * parse时间(yyyy-MM-dd).
      * 
-     * @param dateFormat
-     *            DateFormat
-     * @param time
-     *            time
+     * @param source
+     *            source
      * @return Date
      * @throws ParseException
+     *             ParseException
      */
-    public static Date parse(String time, DateFormat dateFormat) throws ParseException {
-        if (isNullOrEmpty(time) || null == dateFormat) {
-            return null;
-        }
-        Date date = dateFormat.parse(time);
-        return date;
+    public static Date parseYMd(String source) throws ParseException {
+        return threadLocalYMd.get().parse(source);
     }
 
     /**
@@ -198,28 +193,19 @@ public class DateUtil {
      *            dateFormat
      * @return Date
      * @throws ParseException
+     *             ParseException
      */
     public static Date parse(String time, String dateFormat) throws ParseException {
         if (isNullOrEmpty(time) || isNullOrEmpty(dateFormat)) {
             return null;
         }
-        DateFormat df = null;
-        Date date = null;
-        try {
-            df = new SimpleDateFormat(dateFormat);
-            date = df.parse(time);
-        } catch (ParseException e) {
-            time = time.replaceAll("/", "-");
-            if ((!"".equals(time)) && (time.length() < dateFormat.length())) { // format字符串过长
-                time += dateFormat.substring(time.length()).replaceAll("[YyMmDdHhSs]", "0");
-            }
-            date = parse(time, df);
-        }
+        DateFormat df = new SimpleDateFormat(dateFormat);
+        Date date = df.parse(time);
         return date;
     }
 
     /**
-     * 自动解析时间格式并parse时间（支持年月日时分秒毫秒格式，前包含）.
+     * 自动解析时间格式并parse（时间格式为yyyyMMddHHmmssS，默认24小时制、前包含且必须包含yyyyMMdd）.
      * 
      * @param time
      *            time
@@ -228,7 +214,7 @@ public class DateUtil {
      *             ParseException
      */
     public static Date parseAuto(String time) throws ParseException {
-        if (isNullOrEmpty(time)) {
+        if (isNullOrEmpty(time) || time.length() < 8) {
             return null;
         }
         initMapSign();
@@ -243,7 +229,7 @@ public class DateUtil {
         } else {
             char next = 'y';
             String idNext = "yMdHmsS";
-            StringBuffer buffer = new StringBuffer();
+            StringBuilder buffer = new StringBuilder();
             for (char var : time.toCharArray()) {
                 if (String.valueOf(var).matches("[0-9]")) {
                     buffer.append(next);
@@ -259,9 +245,7 @@ public class DateUtil {
         for (Entry<String, String> entry : mapSign.entrySet()) {
             formatPattern = formatPattern.replaceAll(entry.getKey(), entry.getValue());
         }
-        DateFormat df = new SimpleDateFormat(formatPattern);
-        Date date = df.parse(time);
-        return date;
+        return parse(time, formatPattern);
     }
 
     /**
@@ -269,7 +253,7 @@ public class DateUtil {
      * 
      * @param param
      *            param
-     * @return
+     * @return boolean
      */
     private static boolean isNullOrEmpty(String param) {
         return null == param || "".equals(param.trim());
@@ -319,25 +303,25 @@ public class DateUtil {
      * @return date
      */
     public static Date setDate(Date date, String level) {
-        if (null == date) {
-            return null;
+        if (null == date || null == level) {
+            return date;
         }
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
         switch (level) {
-            case DAY: // 保留到 Day
+            case LEVEL_DAY: // 保留到 Day
                 cal.set(Calendar.HOUR, 0);
                 cal.set(Calendar.MINUTE, 0);
                 cal.set(Calendar.SECOND, 0);
                 break;
-            case HOUR: // 保留到 Hour
+            case LEVEL_HOUR: // 保留到 Hour
                 cal.set(Calendar.MINUTE, 0);
                 cal.set(Calendar.SECOND, 0);
                 break;
-            case MINUTE: // 保留到 MINUTE
+            case LEVEL_MINUTE: // 保留到 MINUTE
                 cal.set(Calendar.SECOND, 0);
                 break;
-            case SECOND: // 保留到 SECOND
+            case LEVEL_SECOND: // 保留到 SECOND
                 cal.set(Calendar.MILLISECOND, 0);
                 break;
             default:
@@ -402,16 +386,16 @@ public class DateUtil {
         }
         Double num = null;
         switch (level) {
-            case DAY: // 天
+            case LEVEL_DAY: // 天
                 num = (Double) (time / TimeUnit.DAYS.toMillis(1));
                 break;
-            case HOUR: // 小时
+            case LEVEL_HOUR: // 小时
                 num = (Double) (time / TimeUnit.HOURS.toMillis(1));
                 break;
-            case MINUTE: // 分钟
+            case LEVEL_MINUTE: // 分钟
                 num = (Double) (time / TimeUnit.MINUTES.toMillis(1));
                 break;
-            case SECOND: // 秒
+            case LEVEL_SECOND: // 秒
                 num = (Double) (time / TimeUnit.SECONDS.toMillis(1));
                 break;
             default:
@@ -430,14 +414,14 @@ public class DateUtil {
      *            time
      * @return date
      * @throws ParseException
+     *             ParseException
      */
     public static Date dateToHms(Date date, String time) throws ParseException {
-        if (null == date || null == time || "".equals(time.trim())) {
+        if (null == date || isNullOrEmpty(time)) {
             return date;
         }
-        StringBuffer timeBuf = new StringBuffer();
-        DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-        String dateStr = format.format(date);
+        StringBuilder timeBuf = new StringBuilder();
+        String dateStr = formatYMd(date);
         timeBuf.append(dateStr).append(" ");
         time = time.trim();
         while (!time.matches(".*\\d")) {
@@ -451,7 +435,7 @@ public class DateUtil {
         } else if (time.matches("\\d{1,2}")) {
             timeBuf.append(":00:00.0");
         }
-        date = parse(timeBuf.toString(), formatyMdS);
+        date = parse(timeBuf.toString(), ENUM_FORMAT_YMDS);
         return date;
     }
 
@@ -484,4 +468,12 @@ public class DateUtil {
         return dateType;
     }
 
+    /**
+     * 清理ThreadLocal（每次线程结束都应执行此操作）.
+     * 
+     */
+    public static void clearThreadlocal() {
+        threadLocal.remove();
+        threadLocalYMd.remove();
+    }
 }
