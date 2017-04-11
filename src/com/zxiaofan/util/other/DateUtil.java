@@ -472,7 +472,7 @@ public class DateUtil {
      * 清理ThreadLocal（每次线程结束都应执行此操作）.
      * 
      */
-    public static void clearThreadlocal() {
+    public static void clearThreadLocal() {
         threadLocal.remove();
         threadLocalYMd.remove();
     }
