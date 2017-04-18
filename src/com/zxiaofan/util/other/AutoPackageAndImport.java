@@ -58,26 +58,20 @@ public class AutoPackageAndImport {
         String path = scanner.nextLine();
         String relativeSrc = "";
         try {
-            relativeSrc = (path.substring(path.indexOf(pathStart) + 4)); // 相对路径
+            relativeSrc = path.substring(path.indexOf(pathStart) + 4); // 相对路径
         } catch (Exception e) {
+            e.printStackTrace();
         }
-        // System.out.println(replace(relativeSrc));
+        System.out.println(replace(relativeSrc));
         execute(path, true); // AddPackage
         execute(path, false); // changeImport
-    }
-
-    /**
-     * 构造函数.
-     * 
-     */
-    public AutoPackageAndImport() {
-        throw new RuntimeException("this is a util class,can not instance!");
     }
 
     /**
      * 执行方法.
      * 
      * @param filePath
+     *            filePath
      * @param bool
      *            true:遍历所有Java文件并add package；false:修改import的路径
      */
@@ -116,7 +110,9 @@ public class AutoPackageAndImport {
      * 修改import路径.
      * 
      * @param absolutePath
+     *            absolutePath
      * @throws IOException
+     *             IOException
      */
     private void changeImport(String absolutePath) throws IOException {
         LineNumberReader reader = null;
@@ -130,12 +126,13 @@ public class AutoPackageAndImport {
             return;
         }
         boolean bool = true;
-        String oldChar = "", newChar = "";
+        String oldChar = "";
+        String newChar = "";
         while (s != null) {
             if (bool && (s.startsWith(contentImport) || s == "")) { // 修改原有import
                 oldChar = s.substring(s.indexOf(".")).replace(";", "");
                 newChar = maps.get(oldChar);
-                if (newChar != null && !newChar.equals("")) { // 无需修改
+                if (newChar != null && !"".equals(newChar)) { // 无需修改
                     s = contentImport + newChar + ";";
                 }
                 bufWriter.append(s + lineBreak);
@@ -157,7 +154,10 @@ public class AutoPackageAndImport {
     /**
      * add package.
      * 
+     * @param absolutePath
+     *            absolutePath
      * @throws IOException
+     *             IOException
      */
     private void add(String absolutePath) throws IOException {
         String insertContent = "";
@@ -210,25 +210,32 @@ public class AutoPackageAndImport {
      * 删除备份文件.
      * 
      * @param absolutePath
+     *            absolutePath
+     * @param bool
+     *            true删除
      */
     private void deleteBackup(String absolutePath, boolean bool) {
         if (!bool) {
             return;
         }
         File fAdd = new File(absolutePath + backupAdd); // 要删除的文件位置
-        if (fAdd.exists())
+        if (fAdd.exists()) {
             fAdd.delete();
+        }
         File f = new File(absolutePath + backupImport);
-        if (f.exists())
+        if (f.exists()) {
             f.delete();
+        }
     }
 
     /**
      * 备份文件并返回LineNumberReader、BufferedWriter.
      * 
      * @param absolutePath
+     *            absolutePath
      * @param b
-     * @return
+     *            b
+     * @return List<Object>
      */
     private List<Object> copyAddReturn(String absolutePath, boolean b) {
         String temp = backupImport;
@@ -261,6 +268,10 @@ public class AutoPackageAndImport {
 
     /**
      * 将\替换为点.
+     * 
+     * @param str
+     *            str
+     * @return String
      */
     private String replace(String str) {
         return str.replaceAll("\\\\", ".");
