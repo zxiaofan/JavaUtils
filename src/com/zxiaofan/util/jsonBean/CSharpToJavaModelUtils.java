@@ -14,7 +14,9 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 本工具源于最近项目需要将C#的model转为Java，且公司有CheckStyle，
+ * 本工具源于最近项目需要将C#的model转为Java，且公司有CheckStyle.
  * 
  * 考虑到copy、paste效率太低，且对技术没有任何提升；
  * 
@@ -37,9 +39,25 @@ import java.util.regex.Pattern;
  * @author zxiaofan
  */
 public class CSharpToJavaModelUtils {
+    /**
+     * 执行此main函数即可.
+     * 
+     * @param args
+     *            args
+     */
     public static void main(String[] args) {
         CSharpToJavaModelUtils.start();
     }
+
+    /**
+     * package默认加入该路径.
+     */
+    private static String packagePath = "model.vo";
+
+    /**
+     * 输出路径.
+     */
+    private static String outputPath = "d:\\model\\";
 
     /**
      * 开始转换.
@@ -64,20 +82,12 @@ public class CSharpToJavaModelUtils {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
+        scanner.close();
     }
-
-    /**
-     * 所有待转换文件绝对路径.
-     */
-    static List<String> filePaths = new ArrayList<>();
 
     private static String encode = "utf-8";
 
-    /**
-     * 换行.
-     */
-    private static String rn = "\r\n";
+    private static String rn = "\r\n"; // 换行.
 
     private static String tab = "    ";
 
@@ -96,70 +106,38 @@ public class CSharpToJavaModelUtils {
     private static String importDate = "import java.util.Date;\r\n";
 
     /**
-     * import 包.
-     */
-    private static String importUtil = "import java.util.*;\r\n";
-
-    /**
-     * Map<相对路径，字段信息集合>.
-     */
-    private static Map<String, List<FieldVo>> mapData = new HashMap();
-
-    /**
-     * 待转换的目录.
-     */
-    private static String originPath = "";
-
-    /**
-     * packageName包名.
-     */
-    private static String packageName = "";
-
-    /**
-     * package默认加入该路径.
-     */
-    private static String packagePath = "model.vo";
-
-    /**
-     * 输出路径.
-     */
-    private static String outputPath = "d:\\model\\";
-
-    /**
-     * 构造函数.
-     * 
-     */
-    public CSharpToJavaModelUtils() {
-        throw new RuntimeException("this is a util class,can not instance!");
-    }
-
-    /**
      * 执行转换.
      * 
      * @param path
      *            绝对路径.
-     * @param packageName1
+     * @param packageName
      *            包名.
      */
-    private static void transform(String path, String packageName1) {
-        originPath = path;
-        outputPath = outputPath + packageName1.replaceAll("\\.", "\\\\") + "\\model\\vo";
-        packageName = packageName1;
-        getAllFilePath(path);
-        buildOriginData(filePaths);
-        createJavaModel(mapData);
+    public static void transform(String path, String packageName) {
+        String originPath = handlePath(path); // 待转换的目录
+        if (originPath.endsWith("\\")) {
+            originPath = originPath.substring(0, originPath.length() - 1);
+        }
+        SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmss");
+        outputPath = outputPath + format.format(new Date()) + "\\" + packageName.replaceAll("\\.", "\\\\") + "\\model\\vo";
+        List<String> filePaths = getAllFilePath(path);
+        Map<String, List<FieldVo>> mapData = buildOriginData(filePaths, originPath); // Map<相对路径，字段信息集合>
+        createJavaModel(mapData, packageName);
     }
 
     /**
      * 生成Java model.
      * 
      * @param map
+     *            map
+     * @param packageName
+     *            packageName
      */
-    private static void createJavaModel(Map<String, List<FieldVo>> map) {
+    private static void createJavaModel(Map<String, List<FieldVo>> map, String packageName) {
         createFile(outputPath);
         for (Entry<String, List<FieldVo>> entry : map.entrySet()) {
             String relativePath = entry.getKey();
-            if (!"".equals(relativePath)) {
+            if (!"".equals(relativePath.trim())) {
                 relativePath = relativePath.substring(0, relativePath.lastIndexOf("\\"));
             }
             List<FieldVo> fieldVos = entry.getValue();
@@ -212,7 +190,11 @@ public class CSharpToJavaModelUtils {
             if (!"".equals(relativePath)) {
                 createFile(finalPath);
             }
-            finalPath = outputPath + "\\" + relativePath + "\\" + fieldVos.get(0).getClassName() + ".java";
+            String claseName = fieldVos.get(0).getClassName();
+            if (claseName.contains("<")) {
+                claseName = claseName.substring(0, claseName.indexOf("<"));
+            }
+            finalPath = outputPath + "\\" + relativePath + "\\" + claseName + ".java";
             try {
                 FileWriter fw = new FileWriter(finalPath);
                 fw.write(buffer.toString());
@@ -252,17 +234,21 @@ public class CSharpToJavaModelUtils {
     /**
      * 构造Java model原始信息.
      * 
-     * @param Paths
+     * @param paths
      *            所有待转换文件绝对路径.
+     * @param originPath
+     *            待转换的目录.
+     * @return map
      */
-    private static void buildOriginData(List<String> Paths) {
+    private static Map<String, List<FieldVo>> buildOriginData(List<String> paths, String originPath) {
         String fileTxt = ""; // 文本内容
         String fileClassname = ""; // 类名
         String fieldDesc = ""; // 字段描述
         String fieldNameUpper = ""; // 字段名-大写开头
         String type = ""; // 类型
         String relativePath = ""; // 相对路径
-        for (String absolutePath : Paths) {
+        Map<String, List<FieldVo>> mapData = new HashMap<>();
+        for (String absolutePath : paths) {
             relativePath = absolutePath.replace(originPath, "");
             List<FieldVo> fieldVos = new ArrayList<>(); // 字段信息集合
             fileClassname = absolutePath.substring(absolutePath.lastIndexOf("\\") + 1, absolutePath.lastIndexOf("."));
@@ -271,12 +257,13 @@ public class CSharpToJavaModelUtils {
                 System.err.println("该CS文件不是model:" + absolutePath);
                 continue;
             }
+            fileTxt = formatStr(fileTxt);
             fileTxt = fileTxt.substring(fileTxt.indexOf("namespace"));
-            fileTxt = fileTxt.replaceAll("#region public members", "");
+            fileTxt = fileTxt.replaceAll("#region public members", "").replaceAll(", ", ",").replaceAll("  ", " ");
             // Start 多匹配模式
             StringBuffer pattern = new StringBuffer();
-            pattern.append("<summary>.*?(?<desc>.*?)?</summary>");
-            pattern.append(".*?public\\s(?<type>.*?)?\\s");
+            pattern.append("<summary>.{0,30}?(?<desc>.{0,30}?)?</summary>");
+            pattern.append(".{0,80}?public\\s(?<type>.*?)?\\s");
             pattern.append("(?<fieldname>.*?)?\\{");
             Matcher matcher = Pattern.compile(pattern.toString()).matcher(fileTxt);
             while (matcher.find()) {
@@ -284,7 +271,9 @@ public class CSharpToJavaModelUtils {
                 fieldDesc = matcher.group("desc").replaceAll("/", "").trim();
                 type = matcher.group("type").trim();
                 fieldNameUpper = matcher.group("fieldname").trim();
-                if (!"class".equals(type) && !fieldNameUpper.endsWith(")") && !"".equals(fieldNameUpper)) {
+                if ("class".equals(type) && fieldNameUpper.matches(fileClassname + "<[A-Za-z]+>")) {
+                    fileClassname = fieldNameUpper;
+                } else if (!"class".equals(type) && !fieldNameUpper.endsWith(")") && !"".equals(fieldNameUpper)) {
                     vo.setClassName(fileClassname);
                     vo.setFieldNameUpper(fieldNameUpper);
                     type = typeTrans(type);
@@ -298,6 +287,7 @@ public class CSharpToJavaModelUtils {
             // End 多匹配模式
             mapData.put(relativePath, fieldVos);
         }
+        return mapData;
     }
 
     /**
@@ -315,20 +305,30 @@ public class CSharpToJavaModelUtils {
         }
         if (type.contains("string")) {
             type = type.replaceAll("string", "String");
-        } else if (type.contains("DateTime")) {
+        }
+        if (type.contains("DateTime")) {
             type = type.replaceAll("DateTime", "Date");
-        } else if (type.contains("bool")) {
+        }
+        if (type.contains("bool")) {
             type = type.replaceAll("bool", "boolean");
-        } else if (type.contains("decimal")) {
+        }
+        if (type.contains("decimal")) {
             type = type.replaceAll("decimal", "BigDecimal");
-        } else if (type.contains("object")) {
+        }
+        if (type.contains("object")) {
             type = type.replaceAll("object", "Object");
         }
-        if ("enum".equals(type)) {
-            type = "int";
+        if ("enum".equals(type) || "int".equals(type)) {
+            type = "Integer";
         }
-        if (type.contains("<int>")) {
-            type = type.replaceAll("<int>", "<Integer>");
+        if (type.contains("<int,")) { // Dictionary<int, string>
+            type = type.replaceAll("<int,", "<Integer,");
+        }
+        if (type.contains("Dictionary<")) {
+            type = type.replaceAll("Dictionary<", "Map<");
+        }
+        if (type.contains(",")) {
+            type = type.replaceAll(",", ", ");
         }
         return type;
     }
@@ -337,7 +337,8 @@ public class CSharpToJavaModelUtils {
      * C#字段大写开头转为小写开头.
      * 
      * @param fieldNameUpper
-     * @return
+     *            字段名
+     * @return 小写开头字段
      */
     private static String upperConvertToLower(String fieldNameUpper) {
         if ("".equals(fieldNameUpper)) {
@@ -351,30 +352,42 @@ public class CSharpToJavaModelUtils {
      * 所有待转换文件绝对路径.
      * 
      * @param path
-     * @return
+     *            path
+     * @return paths
      */
-    private static void getAllFilePath(String path) {
+    private static List<String> getAllFilePath(String path) {
         File root = new File(path);
         File[] files = root.listFiles();
+        List<String> paths = new ArrayList<>();
         if (files == null) {
-            filePaths.add(path);
-            return;
+            paths.add(path);
+            return paths;
         }
         for (File file : files) {
             if (file.isDirectory()) {
                 // 递归调用
-                getAllFilePath(file.getAbsolutePath());
+                List<String> pathsTemp = getAllFilePath(file.getAbsolutePath());
+                paths.addAll(pathsTemp);
                 // System.out.println(filePath + "目录下所有子目录及其文件" + file.getAbsolutePath());
             } else {
                 // System.out.println(filePath + "目录下所有文件" + file.getAbsolutePath());
                 if (file.getAbsolutePath().endsWith(".cs")) {
-                    filePaths.add(file.getAbsolutePath());
+                    paths.add(file.getAbsolutePath());
                 }
             }
         }
-
+        return paths;
     }
 
+    /**
+     * 文件读取.
+     * 
+     * @param sFileName
+     *            文件名
+     * @param sEncode
+     *            文件编码格式
+     * @return 文本字符串
+     */
     private static String readTextFile(String sFileName, String sEncode) {
         StringBuffer sbStr = new StringBuffer();
         try {
@@ -400,18 +413,31 @@ public class CSharpToJavaModelUtils {
      *            str
      * @return str
      */
-    private String formatStr(String str) {
+    private static String formatStr(String str) {
         if (str != null) {
-            Pattern p = Pattern.compile("\\s*|\t|\r|\n");
+            Pattern p = Pattern.compile("\r|\n");
             Matcher m = p.matcher(str);
             str = m.replaceAll("");
         }
         return str;
     }
+
+    /**
+     * 处理路径.
+     * 
+     * @param absolutelyPath
+     *            绝对路径文件名
+     * @return 路径
+     */
+    private static String handlePath(String absolutelyPath) {
+        absolutelyPath = absolutelyPath.replaceAll("/+", "\\");
+        absolutelyPath = absolutelyPath.replaceAll("\\+", "\\"); // Windows习惯
+        return absolutelyPath;
+    }
 }
 
 /**
- * 字段信息
+ * 字段信息.
  * 
  * @author yunhai
  */
