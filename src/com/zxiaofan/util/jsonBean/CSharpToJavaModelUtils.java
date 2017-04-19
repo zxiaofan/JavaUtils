@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -69,15 +70,15 @@ public class CSharpToJavaModelUtils {
         String path = scanner.nextLine();
         System.out.println("请输入生成Java文件的包名：");
         String packageName = scanner.nextLine();
-        transform(path, packageName);
-        System.out.println("转换完成，请到" + outputPath + "查看转换结果！");
+        String outputPathDefine = transform(path, packageName);
+        System.out.println("转换完成，请到" + outputPathDefine + "查看转换结果！");
         try {
             String[] cmd = new String[5];
             cmd[0] = "cmd";
             cmd[1] = "/c";
             cmd[2] = "start";
             cmd[3] = " ";
-            cmd[4] = outputPath;
+            cmd[4] = outputPathDefine;
             Runtime.getRuntime().exec(cmd);
         } catch (IOException e) {
             e.printStackTrace();
@@ -112,17 +113,21 @@ public class CSharpToJavaModelUtils {
      *            绝对路径.
      * @param packageName
      *            包名.
+     * @return outputPathDefine
      */
-    public static void transform(String path, String packageName) {
+    public static String transform(String path, String packageName) {
         String originPath = handlePath(path); // 待转换的目录
         if (originPath.endsWith("\\")) {
             originPath = originPath.substring(0, originPath.length() - 1);
         }
         SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmss");
-        outputPath = outputPath + format.format(new Date()) + "\\" + packageName.replaceAll("\\.", "\\\\") + "\\model\\vo";
+        String outputPathDefine = outputPath + format.format(new Date()) + "\\" + packageName.replaceAll("\\.", "\\\\") + "\\";
+        outputPathDefine = outputPathDefine + packagePath.replaceAll("\\.", "\\\\");
+        outputPathDefine = handlePath(outputPathDefine);
         List<String> filePaths = getAllFilePath(path);
         Map<String, List<FieldVo>> mapData = buildOriginData(filePaths, originPath); // Map<相对路径，字段信息集合>
-        createJavaModel(mapData, packageName);
+        createJavaModel(mapData, packageName, outputPathDefine);
+        return outputPathDefine;
     }
 
     /**
@@ -132,9 +137,12 @@ public class CSharpToJavaModelUtils {
      *            map
      * @param packageName
      *            packageName
+     * @param outputPathDefine
+     *            生成文件夹绝对路径
      */
-    private static void createJavaModel(Map<String, List<FieldVo>> map, String packageName) {
-        createFile(outputPath);
+    private static void createJavaModel(Map<String, List<FieldVo>> map, String packageName, String outputPathDefine) {
+        createFile(outputPathDefine);
+        int totalAll = 0;
         for (Entry<String, List<FieldVo>> entry : map.entrySet()) {
             String relativePath = entry.getKey();
             if (!"".equals(relativePath.trim())) {
@@ -144,7 +152,8 @@ public class CSharpToJavaModelUtils {
             if (fieldVos.isEmpty()) {
                 continue;
             }
-            StringBuffer buffer = new StringBuffer();
+            totalAll++;
+            StringBuilder buffer = new StringBuilder();
             if (!"".equals(packageName) && packageName != null && !packageName.endsWith(".")) {
                 packageName += ".";
             }
@@ -153,10 +162,36 @@ public class CSharpToJavaModelUtils {
             // relativePathPackage = relativePathPackage.substring(relativePathPackage.lastIndexOf("."));
             // }
             buffer.append("package " + packageName + packagePath + relativePathPackage + ";" + rn + rn);
-            buffer.append(importBigDecimal);
-            buffer.append(importDate);
-            buffer.append(importList);
-            buffer.append(importMap);
+            List<String> importT = new ArrayList<>();
+            for (FieldVo vo : fieldVos) {
+                if (null == vo) {
+                    continue;
+                }
+                String[] types = vo.getType().replaceAll(" ", "").split("<|,|>");
+                for (String type : types) {
+                    if (Objects.equals("BigDecimal", type) && !importT.contains(type)) {
+                        importT.add(type);
+                    } else if (Objects.equals("Date", type) && !importT.contains(type)) {
+                        importT.add(type);
+                    } else if (Objects.equals("List", type) && !importT.contains(type)) {
+                        importT.add(type);
+                    } else if (Objects.equals("Map", type) && !importT.contains(type)) {
+                        importT.add(type);
+                    }
+                }
+            }
+            if (importT.contains("BigDecimal")) {
+                buffer.append(importBigDecimal);
+            }
+            if (importT.contains("Date")) {
+                buffer.append(importDate);
+            }
+            if (importT.contains("List")) {
+                buffer.append(importList);
+            }
+            if (importT.contains("Map")) {
+                buffer.append(importMap);
+            }
             buffer.append(author);
             buffer.append("public class " + fieldVos.get(0).getClassName() + " {" + rn);
             // 字段定义
@@ -186,7 +221,7 @@ public class CSharpToJavaModelUtils {
             }
             buffer.append("}" + rn);
             relativePath = relativePath.replaceAll("\\.", "\\\\");
-            String finalPath = outputPath + "\\" + relativePath; // + fieldVos.get(0).getClassName() + ".java";
+            String finalPath = outputPathDefine + "\\" + relativePath; // + fieldVos.get(0).getClassName() + ".java";
             if (!"".equals(relativePath)) {
                 createFile(finalPath);
             }
@@ -194,7 +229,7 @@ public class CSharpToJavaModelUtils {
             if (claseName.contains("<")) {
                 claseName = claseName.substring(0, claseName.indexOf("<"));
             }
-            finalPath = outputPath + "\\" + relativePath + "\\" + claseName + ".java";
+            finalPath = outputPathDefine + "\\" + relativePath + "\\" + claseName + ".java";
             try {
                 FileWriter fw = new FileWriter(finalPath);
                 fw.write(buffer.toString());
@@ -206,6 +241,7 @@ public class CSharpToJavaModelUtils {
                 e.printStackTrace();
             }
         }
+        System.out.println("===共计生成" + totalAll + "个文件===");
     }
 
     /**
@@ -259,30 +295,37 @@ public class CSharpToJavaModelUtils {
             }
             fileTxt = formatStr(fileTxt);
             fileTxt = fileTxt.substring(fileTxt.indexOf("namespace"));
-            fileTxt = fileTxt.replaceAll("#region public members", "").replaceAll(", ", ",").replaceAll("  ", " ");
+            fileTxt = fileTxt.replaceAll("#region public members", "").replaceAll(", ", ",").replaceAll("\\s\\s", " ");
             // Start 多匹配模式
-            StringBuffer pattern = new StringBuffer();
-            pattern.append("<summary>.{0,30}?(?<desc>.{0,30}?)?</summary>");
-            pattern.append(".{0,80}?public\\s(?<type>.*?)?\\s");
-            pattern.append("(?<fieldname>.*?)?\\{");
-            Matcher matcher = Pattern.compile(pattern.toString()).matcher(fileTxt);
-            while (matcher.find()) {
-                FieldVo vo = new FieldVo();
-                fieldDesc = matcher.group("desc").replaceAll("/", "").trim();
-                type = matcher.group("type").trim();
-                fieldNameUpper = matcher.group("fieldname").trim();
-                if ("class".equals(type) && fieldNameUpper.matches(fileClassname + "<[A-Za-z]+>")) {
-                    fileClassname = fieldNameUpper;
-                } else if (!"class".equals(type) && !fieldNameUpper.endsWith(")") && !"".equals(fieldNameUpper)) {
-                    vo.setClassName(fileClassname);
-                    vo.setFieldNameUpper(fieldNameUpper);
-                    type = typeTrans(type);
-                    vo.setType(type);
-                    // vo.setRelativePath(relativePath);
-                    vo.setFieldNameLower(upperConvertToLower(fieldNameUpper));
-                    vo.setFieldDesc(fieldDesc);
-                    fieldVos.add(vo);
+            StringBuilder pattern = new StringBuilder();
+            pattern.append("<summary>.{0,40}?(?<desc>.{0,40}?)?</summary>");
+            pattern.append(".{0,80}?public\\s(?<type>[a-zA-Z0-9_,<>\\s]+?)?\\s");
+            pattern.append("(?<fieldname>[a-zA-Z0-9_<>]+?)?\\s+\\{");
+            try {
+                Matcher matcher = Pattern.compile(pattern.toString()).matcher(fileTxt);
+                while (matcher.find()) {
+                    FieldVo vo = new FieldVo();
+                    fieldDesc = matcher.group("desc").replaceAll("/", "").trim();
+                    type = matcher.group("type").trim();
+                    fieldNameUpper = matcher.group("fieldname").trim();
+                    if ("class".equals(type) && fieldNameUpper.matches(fileClassname + "<[A-Za-z]+>")) {
+                        fileClassname = fieldNameUpper;
+                    } else if (!"class".equals(type) && !fieldNameUpper.endsWith(")") && !"".equals(fieldNameUpper)) {
+                        vo.setClassName(fileClassname);
+                        vo.setFieldNameUpper(fieldNameUpper);
+                        type = typeTrans(type);
+                        vo.setType(type);
+                        // vo.setRelativePath(relativePath);
+                        vo.setFieldNameLower(upperConvertToLower(fieldNameUpper));
+                        vo.setFieldDesc(fieldDesc);
+                        fieldVos.add(vo);
+                    }
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println(fileTxt);
+                System.out.println(pattern.toString());
+                System.exit(0);
             }
             // End 多匹配模式
             mapData.put(relativePath, fieldVos);
