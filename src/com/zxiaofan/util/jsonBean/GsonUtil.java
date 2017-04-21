@@ -15,30 +15,30 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 /**
+ * Gson线程安全，建议使用static final.
+ * 
+ * 线程安全：https://github.com/google/gson/issues/63
+ * 
  * @author zxiaofan
  */
 public class GsonUtil {
     /**
-     * GSON.
+     * 默认GSON.
      */
     private static final Gson GSON;
-
-    private static String format_Default = "yyyy-MM-dd HH:mm:ss";
-
-    public static String format_y_M_d = "yyyy-MM-dd";
-
-    public static String format_y_M_d_Slash = "yyyy/MM/dd HH:mm:ss";
 
     /**
      * 构造函数.
      * 
      */
-    private GsonUtil() {
+    public GsonUtil() {
         throw new RuntimeException("工具类不允许实例化!");
     }
 
     static {
-        GSON = new GsonBuilder().setDateFormat(format_Default).create(); // 避免本地环境不同导致模式字符串不同引发Date错乱
+        // 避免URL解码
+        // 避免本地环境不同导致模式字符串不同引发Date错乱
+        GSON = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss").disableHtmlEscaping().create();
     }
 
     /**
@@ -48,15 +48,6 @@ public class GsonUtil {
      */
     public static Gson getGson() {
         return GSON;
-    }
-
-    /**
-     * 获取自定义日期格式的GSON.
-     * 
-     * @return GSON
-     */
-    public static Gson getGson(String format) {
-        return new GsonBuilder().setDateFormat(format).create();
     }
 
     /**
@@ -93,11 +84,22 @@ public class GsonUtil {
 
 }
 
+/**
+ * @author yunhai
+ *
+ *         自定义泛型.
+ */
 @SuppressWarnings("rawtypes")
 class SpecialParameterizedType implements ParameterizedType {
 
+    /**
+     * 外部类类型.
+     */
     private Class clz;
 
+    /**
+     * 内部类类型.
+     */
     private Class actualType;
 
     /**
