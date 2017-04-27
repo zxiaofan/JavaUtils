@@ -50,15 +50,10 @@ public class PrintUtil {
      */
     private static String levelDebug = "debug";
 
-    // /**
-    // * 构造函数.
-    // *
-    // * 使用sping注入需要注释此无参构造函数
-    // *
-    // */
-    // public PrintUtil() {
-    // throw new RuntimeException("this is a util class,can not instance!");
-    // }
+    /**
+     * 输出级别-default.
+     */
+    private static String levelDefault = "default";
 
     /**
      * 使用ThreadLocal解决SimpleDateFormat不同步问题.
@@ -71,23 +66,13 @@ public class PrintUtil {
     };
 
     /**
-     * 当前输出描述.
-     */
-    private static ThreadLocal<String> threadLevelDesc = new ThreadLocal<String>() {
-        @Override
-        protected String initialValue() {
-            return "default";
-        }
-    };
-
-    /**
      * 直接输出所有信息.
      * 
      * @param param
      *            param
      */
     public static void print(Object param) {
-        dealPrint(param);
+        dealPrint(param, levelDefault);
     }
 
     /**
@@ -98,8 +83,7 @@ public class PrintUtil {
      */
     public static void printInfo(Object param) {
         if (level >= 2) {
-            threadLevelDesc.set(levelInfo);
-            dealPrint(param);
+            dealPrint(param, levelInfo);
         }
     }
 
@@ -111,8 +95,7 @@ public class PrintUtil {
      */
     public static void printError(Object param) {
         if (level >= 3) {
-            threadLevelDesc.set(levelError);
-            dealPrint(param);
+            dealPrint(param, levelError);
         }
     }
 
@@ -124,8 +107,7 @@ public class PrintUtil {
      */
     public static void printDebug(Object param) {
         if (level >= 1) {
-            threadLevelDesc.set(levelDebug);
-            dealPrint(param);
+            dealPrint(param, levelDebug);
         }
     }
 
@@ -134,10 +116,14 @@ public class PrintUtil {
      * 
      * @param param
      *            param
+     * @param levelDesc
+     *            levelDesc
      */
-    private static void dealPrint(Object param) {
-        if (param instanceof String) {
-            print((String) param);
+    private static void dealPrint(Object param, String levelDesc) {
+        if (null == param) {
+            print("null", levelDesc);
+        } else if (param instanceof String) {
+            print((String) param, levelDesc);
         } else if (param instanceof Throwable) {
             print((Throwable) param);
         } // 可增加打印Bean
@@ -148,11 +134,13 @@ public class PrintUtil {
      * 
      * @param s
      *            字符串
+     * @param levelDesc
+     *            levelDesc
      */
-    private static void print(String s) {
-        System.out.println("[" + threadLevelDesc.get() + "]" + ":[" + threadLocal.get().format(new Date()) + "]" + s);
-        threadLocal.remove();
-        threadLevelDesc.remove();
+    private static void print(String s, String levelDesc) {
+        StringBuilder builder = new StringBuilder(s.length());
+        builder.append("[").append(levelDesc).append("]:[").append(threadLocal.get().format(new Date())).append("]").append(s);
+        System.out.println(builder.toString());
     }
 
     /**
@@ -163,8 +151,8 @@ public class PrintUtil {
      */
     private static void print(Throwable e) {
         print("---Position---");
-        String print = locateException(e, 0) + locateException(e, 1); // 方便单独记录日志
-        System.out.println(print);
+        // String print = locateException(e, 0) + locateException(e, 1); // 方便单独记录日志
+        // System.out.println(print);
         e.printStackTrace();
     }
 
@@ -178,10 +166,11 @@ public class PrintUtil {
      * @return 异常信息
      */
     private static String locateException(Throwable e, int i) {
+        StringBuilder builder = new StringBuilder();
         if (e != null && null != e.getStackTrace() && i >= 0 && e.getStackTrace().length > i) {
-            return ">>>" + e.getStackTrace()[i].getFileName() + "-" + e.getStackTrace()[i].getMethodName() + e.getStackTrace()[i].getLineNumber();
+            builder.append(">>>").append(e.getStackTrace()[i].getFileName()).append("-").append(e.getStackTrace()[i].getMethodName()).append(e.getStackTrace()[i].getLineNumber());
         }
-        return "";
+        return builder.toString();
     }
 
     /**
@@ -192,9 +181,7 @@ public class PrintUtil {
         if (-1 != level) {
             return;
         }
-        if (null == console || "".equals(console) || levelError.equals(console)) {
-            level = 3;
-        } else if ("false".equals(console)) {
+        if ("false".equals(console)) {
             level = 0;
         } else if (levelInfo.equals(console)) {
             level = 2;
