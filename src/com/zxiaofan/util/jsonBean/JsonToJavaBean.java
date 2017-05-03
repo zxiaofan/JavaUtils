@@ -32,46 +32,95 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
 /**
- * 最近需将大量json转换为对应的JavaBean，网上有诸多在线转换工具，但是由于[1:无法直接生成JavaBean;2转换不够准确;3:公司对代码要求CheckStyle]，故自己写个转换工具
+ * 最近需将大量json转换为对应的JavaBean，网上有诸多在线转换工具，但是由于[1:无法直接生成JavaBean;2转换不够准确;3:公司对代码要求CheckStyle]，故自己写个转换工具.
  * 
  * 功能：读取Json文件并在outputPath目录生成相应的JavaBean文件，直接Copy使用，注释可选(直过CheckStyle)。
  * 
  * 持续更新地址：https://github.com/zxiaofan/JavaUtils
+ * 
+ * Note:暂不支持多线程并发.
  * 
  * @author zxiaofan
  */
 @SuppressWarnings("unchecked")
 public class JsonToJavaBean {
     // ====== 修改参数 ====== //
-    private static String path = "D:\\json.txt"; // 待转换Json路径
+    /**
+     * 待转换Json路径.
+     */
+    private static String path = "D:\\json.txt";
 
-    private static String packageName = "com.zxiaofan.service.model.vo"; // packageName包名.
+    /**
+     * packageName包名.
+     */
+    private static String packageName = "com.zxiaofan.service.model.vo";
 
-    private static String beanRootName = "Root"; // 根Bean名字
-    // ====== 修改参数 ====== //
+    /**
+     * 根Bean名字.
+     */
+    private static String beanRootName = "Root";
 
-    private static boolean addNote = true; // 是否添加注释
+    /**
+     * 是否为字段添加@SerializedName("Upper")注解，字段大写（默认false）.
+     */
+    private static boolean serializedNameUpper = false;
 
-    private static boolean defaultInteger = true; // 默认使用Integer代替int
-
-    private static String packagePath = ""; // package子路径
-
-    private static String outputPath = "d:\\JsonToJavaBean\\"; // 输出路径
-
-    // [double]特殊匹配规则(前缀|后缀|包含|类型),默认不区分大小写
+    /**
+     * [double]特殊匹配规则(前缀|后缀|包含|类型),默认不区分大小写.
+     */
     private static String matchRuleDouble = "|Date_Time_Hour||long,|!id_type|money_price|BigDecimal,|Cost|!time|BigDecimal";
 
-    // [String]特殊匹配规则(前缀|后缀|包含|类型),默认不区分大小写
+    /**
+     * [String]特殊匹配规则(前缀|后缀|包含|类型),默认不区分大小写.
+     */
     private static String matchRuleString = "|Date_Time_Hour||Date," + matchRuleDouble; // 自动覆盖double规则第一条
 
-    private static boolean ismachRule = true; // 是否开启特殊匹配规则
+    /**
+     * 是否开启特殊匹配规则.
+     */
+    private static boolean ismachRule = true;
 
-    private static boolean machRuleIgnoreCase = true; // 特殊匹配规则默认不区分大小写
+    /**
+     * 特殊匹配规则默认不区分大小写.
+     */
+    private static boolean machRuleIgnoreCase = true;
 
+    // ====== 修改参数 ====== //
+
+    /**
+     * 是否添加注释.
+     */
+    private static boolean addNote = true;
+
+    /**
+     * 默认使用Integer代替int.
+     */
+    private static boolean defaultInteger = true;
+
+    /**
+     * package子路径.
+     */
+    private static String packagePath = "";
+
+    /**
+     * 输出路径.
+     */
+    private static String outputPath = "d:\\JsonToJavaBean\\";
+
+    /**
+     * main.
+     * 
+     * @param args
+     *            args
+     */
     public static void main(String[] args) {
         start();
     }
 
+    /**
+     * 开始转换.
+     * 
+     */
     public static void start() {
         // System.out.println("请输入待转换的json文件的绝对路径：");
         // Scanner scanner = new Scanner(System.in);
@@ -80,7 +129,7 @@ public class JsonToJavaBean {
         String json = readTextFile(path, encode);
         outputPath = outputPath + format.format(new Date()) + "\\" + packageName + "\\" + packagePath;
         outputPath = outputPath.replaceAll("\\.", "\\\\");
-        toJavaBean(json, packageName);
+        toJavaBean(json);
         System.out.println("转换完成，请到【" + outputPath + "】查看转换结果！");
         createFile(outputPath);
         try {
@@ -101,9 +150,9 @@ public class JsonToJavaBean {
      * 转bean.
      * 
      * @param json
-     * @param packageName
+     *            json
      */
-    private static void toJavaBean(String json, String packageName) {
+    private static void toJavaBean(String json) {
         if (!(json.startsWith("{") || json.endsWith("}"))) {
             throw new RuntimeException("不是标准的json文件:{...}"); // 暂不做过多校验
         }
@@ -129,16 +178,17 @@ public class JsonToJavaBean {
             if (fieldVos.isEmpty()) {
                 continue;
             }
-            StringBuffer buffer = new StringBuffer();
+            StringBuilder builder = new StringBuilder();
             if (!"".equals(packageName) && packageName != null && !packageName.endsWith(".") && !"".equals(packagePath.trim())) {
                 packageName += ".";
             }
-            buffer.append("package " + packageName + packagePath + ";" + rn + rn);
-            buffer.append(importJar);
-            buffer.append(author);
-            buffer.append("public class " + fieldVos.get(0).getFieldNameUpper() + " {" + rn);
+            builder.append("package " + packageName + packagePath + ";" + rn + rn);
+            builder.append(importJar);
+            builder.append(author);
+            builder.append("public class " + fieldVos.get(0).getFieldNameUpper() + " {" + rn);
             Set<Bean> setBean = new HashSet<>();
             // 字段定义
+            boolean hasImport = false;
             for (int i = 1; i < fieldVos.size(); i++) {
                 Bean vo = fieldVos.get(i);
                 if (setBean.contains(vo)) {
@@ -146,49 +196,63 @@ public class JsonToJavaBean {
                 }
                 setBean.add(vo);
                 if (addNote) {
-                    buffer.append(desc1);
-                    buffer.append(vo.getFieldDesc());
-                    buffer.append(desc2);
+                    builder.append(desc1);
+                    builder.append(vo.getFieldDesc());
+                    builder.append(desc2);
                 }
-                buffer.append("private " + vo.getFieldType() + " " + vo.getFieldNameLower() + ";" + rn);
+                if (serializedNameUpper) {
+                    builder.append("@SerializedName(\"").append(vo.getFieldNameUpper()).append("\")").append(rn);
+                }
+                builder.append(tab).append("private ").append(vo.getFieldType()).append(" ").append(vo.getFieldNameLower()).append(";").append(rn);
                 if (vo.getFieldType().startsWith(ObjType.BigDecimal)) {
                     listJar[0] = importBigDecimal;
+                    hasImport = true;
                 } else if (vo.getFieldType().startsWith(ObjType.Date)) {
                     listJar[1] = importDate;
+                    hasImport = true;
                 } else if (vo.getFieldType().startsWith(ObjType.List)) {
                     listJar[2] = importList;
+                    hasImport = true;
                 } else if (vo.getFieldType().startsWith(ObjType.Map)) {
                     listJar[3] = importMap;
+                    hasImport = true;
                 } else if (vo.getFieldType().startsWith(ObjType.Set)) {
                     listJar[4] = importSet;
+                    hasImport = true;
                 }
+            }
+            if (serializedNameUpper) {
+                if (hasImport) {
+                    listJar[5] = rn;
+                }
+                listJar[6] = importSerializedNameUpper;
             }
             // 字段get、set
             for (int i = 1; i < fieldVos.size(); i++) {
                 Bean vo = fieldVos.get(i);
                 // get
                 if (addNote) {
-                    buffer.append(desc1);
-                    buffer.append("获取" + vo.getFieldDesc() + "." + rn + tab + " *" + rn);
-                    buffer.append("     * @return 返回" + vo.getFieldDesc());
-                    buffer.append(desc2);
+                    builder.append(desc1);
+                    builder.append("获取" + vo.getFieldDesc() + "." + rn + tab + " *" + rn);
+                    builder.append("     * @return 返回" + vo.getFieldDesc());
+                    builder.append(desc2);
                 }
-                buffer.append("public " + vo.getFieldType() + " get" + vo.getFieldNameUpper() + "() {" + rn);
-                buffer.append(tab + tab + "return " + vo.getFieldNameLower() + ";" + rn + tab + "}" + rn);
+                builder.append("public " + vo.getFieldType() + " get" + vo.getFieldNameUpper() + "() {" + rn);
+                builder.append(tab + tab + "return " + vo.getFieldNameLower() + ";" + rn + tab + "}" + rn);
                 // set
                 if (addNote) {
-                    buffer.append(desc1);
-                    buffer.append("设置" + vo.getFieldDesc() + "." + rn + tab + " *" + rn);
-                    buffer.append("     * @param " + vo.getFieldNameLower() + rn + tab);
-                    buffer.append(" *       要设置的" + vo.getFieldNameUpper());
-                    buffer.append(desc2);
+                    builder.append(desc1);
+                    builder.append("设置" + vo.getFieldDesc() + "." + rn + tab + " *" + rn);
+                    builder.append("     * @param " + vo.getFieldNameLower() + rn + tab);
+                    builder.append(" *       要设置的" + vo.getFieldNameUpper());
+                    builder.append(desc2);
                 }
-                buffer.append("public void set" + vo.getFieldNameUpper() + "(" + vo.getFieldType() + " " + vo.getFieldNameLower() + ") {" + rn);
-                buffer.append(tab + tab + "this." + vo.getFieldNameLower() + " = " + vo.getFieldNameLower() + ";" + rn + tab + "}" + rn);
+                builder.append("public void set" + vo.getFieldNameUpper() + "(" + vo.getFieldType() + " " + vo.getFieldNameLower() + ") {" + rn);
+                builder.append(tab + tab + "this." + vo.getFieldNameLower() + " = " + vo.getFieldNameLower() + ";" + rn + tab + "}" + rn);
             }
-            buffer.append("}" + rn);
-            String beanText = buffer.toString();
-            StringBuffer jarText = new StringBuffer();
+            builder.append("}" + rn);
+            String beanText = builder.toString();
+            StringBuilder jarText = new StringBuilder();
             for (String jar : listJar) {
                 if (jar != null) {
                     jarText.append(jar);
@@ -199,10 +263,8 @@ public class JsonToJavaBean {
             finalPath = finalPath.replaceAll("\\.", "\\\\");
             createFile(finalPath);
             finalPath = finalPath + fieldVos.get(0).getFieldNameUpper() + ".java";
-            try {
-                FileWriter fw = new FileWriter(finalPath);
+            try (FileWriter fw = new FileWriter(finalPath);) {
                 fw.write(beanText);
-                fw.close();
                 // OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(file), encode);
                 // out.write(buffer.toString());
                 // out.close();
@@ -221,8 +283,8 @@ public class JsonToJavaBean {
     private static void formatBean() {
         for (List<Bean> fieldVos : fields.values()) {
             for (Bean bean : fieldVos) {
-                bean.setFieldNameLower(CaseConversion(bean.getFieldName(), true));
-                bean.setFieldNameUpper(CaseConversion(bean.getFieldName(), false));
+                bean.setFieldNameLower(caseConversion(bean.getFieldName(), true));
+                bean.setFieldNameUpper(caseConversion(bean.getFieldName(), false));
             }
         }
     }
@@ -277,13 +339,13 @@ public class JsonToJavaBean {
             } else {
                 String childJson = v.toString();
                 if (childJson.startsWith("{")) {
-                    bean.setFieldType(CaseConversion(k, false));
+                    bean.setFieldType(caseConversion(k, false));
                     List<Bean> newBeans = new ArrayList<>();
                     buildOrignBean(childJson, newBeans, k);
                     fields.put(k, newBeans);
                 } else if (childJson.startsWith("[")) {
                     bean.setFieldName(k);
-                    bean.setFieldType("List<" + CaseConversion(k, false) + ">");
+                    bean.setFieldType("List<" + caseConversion(k, false) + ">");
                     // System.out.println(childJson);
                     List<Object> childList = (List<Object>) fromJson(childJson, List.class);
                     List<Bean> newBeans = new ArrayList<>();
@@ -494,12 +556,13 @@ public class JsonToJavaBean {
      * 大小写转换.
      * 
      * @param fieldName
+     *            字段名
      * @param toLower
      *            true:大转小
-     * @return
+     * @return 转换后的字段名
      */
-    private static String CaseConversion(String fieldName, boolean toLower) {
-        if ("".equals(fieldName)) {
+    private static String caseConversion(String fieldName, boolean toLower) {
+        if (null == fieldName || "".equals(fieldName)) {
             return "";
         }
         String result = "";
@@ -511,7 +574,7 @@ public class JsonToJavaBean {
         return result;
     }
 
-    private static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd hh-mm-ss");
+    private static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss");
 
     private static String typeString = "typeString";
 
@@ -546,6 +609,8 @@ public class JsonToJavaBean {
     private static String importDate = "import java.util.Date;\r\n";
 
     private static String importSet = "import java.util.Set;\r\n";
+
+    private static String importSerializedNameUpper = "import com.google.gson.annotations.SerializedName;\r\n";
 }
 
 class Bean {
@@ -656,6 +721,12 @@ class Bean {
 
 }
 
+/**
+ * 字段类类型.
+ * 
+ * @author yunhai
+ *
+ */
 class ObjType {
     static final String String = "String";
 
