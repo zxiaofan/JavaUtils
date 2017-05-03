@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -64,6 +65,16 @@ public class JsonToJavaBean {
      * 是否为字段添加@SerializedName("Upper")注解，字段大写（默认false）.
      */
     private static boolean serializedNameUpper = false;
+
+    /**
+     * 是否替换get、Set方法的字段中的特殊字符（默认开启）.
+     */
+    private static boolean replaceSpecialCharacter = true;
+
+    /**
+     * get、Set方法的字段中要过滤字符(ReplaceAll)(默认只保留字母数字[^0-9a-zA-Z])(index[1]即替换后的字符).
+     */
+    private static List<String> filterCharacter = Arrays.asList("[^0-9a-zA-Z]", "");
 
     /**
      * [double]特殊匹配规则(前缀|后缀|包含|类型),默认不区分大小写.
@@ -174,7 +185,7 @@ public class JsonToJavaBean {
         createFile(outputPath);
         for (Entry<String, List<Bean>> entry : fields.entrySet()) {
             String[] listJar = new String[8]; // 顺序:BigDecimal、Date、List、Map、Set
-            List<Bean> fieldVos = entry.getValue();
+            List<Bean> fieldVos = new ArrayList<>(entry.getValue());
             if (fieldVos.isEmpty()) {
                 continue;
             }
@@ -186,7 +197,7 @@ public class JsonToJavaBean {
             builder.append(importJar);
             builder.append(author);
             builder.append("public class " + fieldVos.get(0).getFieldNameUpper() + " {" + rn);
-            Set<Bean> setBean = new HashSet<>();
+            Set<Bean> setBean = new HashSet<Bean>();
             // 字段定义
             boolean hasImport = false;
             for (int i = 1; i < fieldVos.size(); i++) {
@@ -202,8 +213,9 @@ public class JsonToJavaBean {
                 }
                 if (serializedNameUpper) {
                     builder.append("@SerializedName(\"").append(vo.getFieldNameUpper()).append("\")").append(rn);
+                    builder.append(tab);
                 }
-                builder.append(tab).append("private ").append(vo.getFieldType()).append(" ").append(vo.getFieldNameLower()).append(";").append(rn);
+                builder.append("private ").append(vo.getFieldType()).append(" ").append(vo.getFieldNameLower()).append(";").append(rn);
                 if (vo.getFieldType().startsWith(ObjType.BigDecimal)) {
                     listJar[0] = importBigDecimal;
                     hasImport = true;
@@ -227,9 +239,10 @@ public class JsonToJavaBean {
                 }
                 listJar[6] = importSerializedNameUpper;
             }
-            // 字段get、set
-            for (int i = 1; i < fieldVos.size(); i++) {
-                Bean vo = fieldVos.get(i);
+            // 字段get、set（已过滤第一个Bean）
+            List<Bean> beans = new ArrayList<>(setBean);
+            for (int i = 0; i < beans.size(); i++) {
+                Bean vo = beans.get(i);
                 // get
                 if (addNote) {
                     builder.append(desc1);
@@ -237,18 +250,33 @@ public class JsonToJavaBean {
                     builder.append("     * @return 返回" + vo.getFieldDesc());
                     builder.append(desc2);
                 }
-                builder.append("public " + vo.getFieldType() + " get" + vo.getFieldNameUpper() + "() {" + rn);
-                builder.append(tab + tab + "return " + vo.getFieldNameLower() + ";" + rn + tab + "}" + rn);
+                builder.append("public ").append(vo.getFieldType()).append(" get");
+                if (replaceSpecialCharacter) {
+                    builder.append(vo.getFieldNameUpper().replaceAll(filterCharacter.get(0), filterCharacter.get(1)));
+                } else {
+                    builder.append(vo.getFieldNameUpper());
+                }
+                builder.append("() {").append(rn);
+                builder.append(tab).append(tab).append("return ").append(vo.getFieldNameLower()).append(";").append(rn).append(tab).append("}").append(rn);
+                String fieldNameUpperTemp = vo.getFieldNameUpper();
+                String fieldNameLowerTemp = vo.getFieldNameLower();
+                if (replaceSpecialCharacter) {
+                    fieldNameUpperTemp = fieldNameUpperTemp.replaceAll(filterCharacter.get(0), filterCharacter.get(1));
+                    fieldNameLowerTemp = fieldNameLowerTemp.replaceAll(filterCharacter.get(0), filterCharacter.get(1));
+                }
                 // set
                 if (addNote) {
                     builder.append(desc1);
                     builder.append("设置" + vo.getFieldDesc() + "." + rn + tab + " *" + rn);
-                    builder.append("     * @param " + vo.getFieldNameLower() + rn + tab);
+                    builder.append("     * @param " + fieldNameLowerTemp + rn + tab);
                     builder.append(" *       要设置的" + vo.getFieldNameUpper());
                     builder.append(desc2);
                 }
-                builder.append("public void set" + vo.getFieldNameUpper() + "(" + vo.getFieldType() + " " + vo.getFieldNameLower() + ") {" + rn);
-                builder.append(tab + tab + "this." + vo.getFieldNameLower() + " = " + vo.getFieldNameLower() + ";" + rn + tab + "}" + rn);
+                builder.append("public void set");
+
+                builder.append(fieldNameUpperTemp);
+                builder.append("(").append(vo.getFieldType()).append(" ").append(fieldNameLowerTemp).append(") {").append(rn);
+                builder.append(tab).append(tab).append("this.").append(vo.getFieldNameLower()).append(" = ").append(fieldNameLowerTemp).append(";").append(rn).append(tab).append("}").append(rn);
             }
             builder.append("}" + rn);
             String beanText = builder.toString();
@@ -293,8 +321,11 @@ public class JsonToJavaBean {
      * 构建原始实体数据.
      * 
      * @param json
+     *            json
      * @param beans
+     *            beans
      * @param className
+     *            className
      */
     private static void buildOrignBean(String json, List<Bean> beans, String className) {
         Map<String, Object> map = null;
@@ -315,7 +346,7 @@ public class JsonToJavaBean {
             String k = entry.getKey(); // FieldName
             bean.setFieldName(k);
             Object v = entry.getValue();
-            if (v == null || v.toString().equals("[]")) {
+            if (v == null || "[]".equals(v.toString())) {
                 itr.remove();
                 continue;
             }
@@ -353,7 +384,7 @@ public class JsonToJavaBean {
                         bean.setFieldType(ObjType.ListString);
                         beans.add(bean);
                     } else {
-                        buildOrignBean(gson.toJson(childList.get(0)), newBeans, k);
+                        buildOrignBean(gson.toJson(childList.get(0)), newBeans, k); // 数据可能重复["ANY"]
                     }
                 } else {
                     bean.setFieldType(ObjType.String);
