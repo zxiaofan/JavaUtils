@@ -11,6 +11,7 @@ package com.zxiaofan.util.other;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -20,20 +21,22 @@ import org.springframework.stereotype.Component;
  * 
  * Note：不要implements接口，避免try catch嵌套时无法定位到原始异常位置。
  * 
+ * 可自行增加功能【打印Bean、打印并log】。
+ * 
  * @author github.zxiaofan.com
  */
 @Component
 public class PrintUtil {
 
     /**
-     * 控制台输出级别（false-0不输出，error-3输出异常【默认】，info-2输出重要信息及异常，debug-1输出所有）.
+     * 控制台输出级别（false-0不输出，error-1输出异常【默认】，info-2输出重要信息及异常，debug-3输出所有）.
      */
     private static String console;
 
     /**
      * 输出级别.
      */
-    private static Integer level = -1;
+    private static Integer level = Integer.MIN_VALUE;
 
     /**
      * 输出级别-error.
@@ -76,26 +79,26 @@ public class PrintUtil {
     }
 
     /**
-     * 重要信息.
-     * 
-     * @param param
-     *            param
-     */
-    public static void printInfo(Object param) {
-        if (level >= 2) {
-            dealPrint(param, levelInfo);
-        }
-    }
-
-    /**
      * 异常.
      * 
      * @param param
      *            param
      */
     public static void printError(Object param) {
-        if (level >= 3) {
+        if (1 <= level) {
             dealPrint(param, levelError);
+        }
+    }
+
+    /**
+     * 重要信息.
+     * 
+     * @param param
+     *            param
+     */
+    public static void printInfo(Object param) {
+        if (2 <= level) {
+            dealPrint(param, levelInfo);
         }
     }
 
@@ -106,7 +109,7 @@ public class PrintUtil {
      *            param
      */
     public static void printDebug(Object param) {
-        if (level >= 1) {
+        if (3 <= level) {
             dealPrint(param, levelDebug);
         }
     }
@@ -138,7 +141,7 @@ public class PrintUtil {
      *            levelDesc
      */
     private static void print(String s, String levelDesc) {
-        StringBuilder builder = new StringBuilder(s.length());
+        StringBuilder builder = new StringBuilder(s.length() + 32);
         builder.append("[").append(levelDesc).append("]:[").append(threadLocal.get().format(new Date())).append("]").append(s);
         System.out.println(builder.toString());
     }
@@ -165,8 +168,9 @@ public class PrintUtil {
      *            异常父类级别
      * @return 异常信息
      */
+    @SuppressWarnings("unused")
     private static String locateException(Throwable e, int i) {
-        StringBuilder builder = new StringBuilder();
+        StringBuilder builder = new StringBuilder(30);
         if (e != null && null != e.getStackTrace() && i >= 0 && e.getStackTrace().length > i) {
             builder.append(">>>").append(e.getStackTrace()[i].getFileName()).append("-").append(e.getStackTrace()[i].getMethodName()).append(e.getStackTrace()[i].getLineNumber());
         }
@@ -178,17 +182,17 @@ public class PrintUtil {
      * 
      */
     private static synchronized void initLevel() {
-        if (-1 != level) {
+        if (Integer.MIN_VALUE != level) {
             return;
         }
-        if ("false".equals(console)) {
+        if (Objects.equals("false", console)) {
             level = 0;
-        } else if (levelInfo.equals(console)) {
-            level = 2;
-        } else if (levelDebug.equals(console)) {
-            level = 1;
-        } else {
+        } else if (Objects.equals(levelDebug, console)) {
             level = 3;
+        } else if (Objects.equals(levelInfo, console)) {
+            level = 2;
+        } else {
+            level = 1;
         }
     }
 
