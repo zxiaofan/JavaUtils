@@ -310,7 +310,8 @@ public class DateUtil {
         cal.setTime(date);
         switch (level) {
             case LEVEL_DAY: // 保留到 Day
-                cal.set(Calendar.HOUR, 0);
+                // cal.set(Calendar.HOUR, 0); // 12小时制
+                cal.set(Calendar.HOUR_OF_DAY, 0); // 24小时制
                 cal.set(Calendar.MINUTE, 0);
                 cal.set(Calendar.SECOND, 0);
                 break;
