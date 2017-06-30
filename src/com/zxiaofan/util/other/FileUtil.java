@@ -29,8 +29,10 @@ import java.util.concurrent.TimeUnit;
  * @author zxiaofan
  */
 public class FileUtil {
-    static String max = "max";
 
+    /**
+     * 缓存指定数据的偏移位置.
+     */
     static Map<String, Long> mapIndex = new ConcurrentHashMap<>(); // <行key,index>
 
     /**
@@ -48,69 +50,75 @@ public class FileUtil {
      * 
      * @param file
      *            file
-     * @param content
+     * @param specialContent
      *            查找指定内容
      * @return String
      * @throws Exception
      *             Exception
      */
-    @SuppressWarnings("resource")
-    public static String getSpecificLine(File file, String content) throws Exception {
+    public static String getSpecificLine(File file, String specialContent) throws Exception {
         RandomAccessFile randomAccessFile = null;
-        randomAccessFile = new RandomAccessFile(file, "r");
-        long fileLength = randomAccessFile.length(); // 获取当前文件的长度
-        long indexStart = 0;
-        if (!mapIndex.containsKey(max)) {
-            mapIndex.put(max, 0L);
-        }
-        Future<String> future = null;
-        if (mapIndex.containsKey(content)) {
-            indexStart = mapIndex.get(content);
-        } else {
-            indexStart = mapIndex.get(max);
-            // 大文件缓存全部key索引耗时较多，建议按行匹配并发,取优先完成的数据
-            ExecutorService service = Executors.newFixedThreadPool(1);
-            // future = service.submit(new QueryCallable(file, content));
-        }
-        if (indexStart > fileLength || indexStart < 0) {
-            System.out.println("index illegal");
-            return null;
-        }
-        long index = indexStart;
-        randomAccessFile.seek(index);
-        StringBuffer buffer = new StringBuffer();
-        String line = null;
-        boolean getData = false;
-        while (index <= fileLength && null != (line = randomAccessFile.readLine())) {
-            line = new String(line.getBytes("ISO-8859-1"), "utf-8"); // 处理乱码
-            String key = line.substring(0, Math.min(10, line.length())); // 假设key为我们要匹配的content
-            if (key.equals(content)) {
-                buffer.append(line);
-                getData = true;
-            } else if (getData && !key.equals(content)) {
-                break;
+        StringBuilder builder;
+        try {
+            randomAccessFile = new RandomAccessFile(file, "r");
+            long fileLength = randomAccessFile.length(); // 获取当前文件的长度
+            long indexStart = 0;
+            if (!mapIndex.containsKey("max")) { // 当前最大指针
+                mapIndex.put("max", 0L);
             }
-            if (!mapIndex.containsKey(key)) {
-                mapIndex.put(key, index);
+            Future<String> future = null;
+            if (mapIndex.containsKey(specialContent)) {
+                indexStart = mapIndex.get(specialContent);
+            } else {
+                indexStart = mapIndex.get("max");
+                // 大文件缓存全部key索引耗时较多，建议按行匹配并发,取优先完成的数据
+                ExecutorService service = Executors.newFixedThreadPool(1);
+                // future = service.submit(new QueryCallable(file, content));
             }
-            if (index > mapIndex.get(max)) {
-                mapIndex.put(max, index);
+            if (indexStart > fileLength || indexStart < 0) {
+                System.out.println("index illegal:" + indexStart);
+                return null;
             }
-            index = randomAccessFile.getFilePointer(); // 获取下次循环的开始指针
-            if (null != future) {
-                try {
-                    String res = future.get(1, TimeUnit.MILLISECONDS);
-                    if (null != res) {
-                        buffer.setLength(0);
-                        buffer.append(res);
-                        break;
+            long index = indexStart;
+            randomAccessFile.seek(index);
+            builder = new StringBuilder();
+            String line = null;
+            boolean getData = false;
+            while (index <= fileLength && null != (line = randomAccessFile.readLine())) {
+                line = new String(line.getBytes("ISO-8859-1"), "utf-8"); // 处理乱码
+                String key = line.substring(0, Math.min(10, line.length())); // 假设key为我们要匹配的content
+                if (key.equals(specialContent)) {
+                    builder.append(line);
+                    getData = true;
+                } else if (getData && !key.equals(specialContent)) {
+                    break;
+                }
+                if (!mapIndex.containsKey(key)) {
+                    mapIndex.put(key, index);
+                }
+                if (index > mapIndex.get("max")) {
+                    mapIndex.put("max", index);
+                }
+                index = randomAccessFile.getFilePointer(); // 获取下次循环的开始指针
+                if (null != future) {
+                    try {
+                        String res = future.get(1, TimeUnit.MILLISECONDS);
+                        if (null != res) {
+                            builder.setLength(0);
+                            builder.append(res);
+                            break;
+                        }
+                    } catch (Exception e) {
+                        System.out.println();
                     }
-                } catch (Exception e) {
-                    System.out.println();
                 }
             }
+        } finally {
+            if (null != randomAccessFile) {
+                randomAccessFile.close();
+            }
         }
-        return buffer.toString();
+        return builder.toString();
     }
 
     /**
@@ -129,12 +137,14 @@ public class FileUtil {
         try {
             File file = new File(fileName);
             if (file.exists()) {
-                if (file.isDirectory())
+                if (file.isDirectory()) {
                     throw new IOException("File '" + file + "' exists but is a directory");
-                if (!file.canRead())
+                }
+                if (!file.canRead()) {
                     throw new IOException("File '" + file + "' cannot be read");
-                else
+                } else {
                     input = new FileInputStream(file);
+                }
             } else {
                 throw new FileNotFoundException("File '" + file + "' does not exist");
             }
@@ -145,18 +155,17 @@ public class FileUtil {
             } else {
                 in = new InputStreamReader(input, encode);
             }
-            char buffer[] = new char[4096];
+            char[] buffer = new char[4096];
             for (int n = 0; -1 != (n = in.read(buffer));) {
                 output.write(buffer, 0, n);
             }
-            String s = output.toString();
-            return s;
+            return output.toString();
         } finally {
             if (null != input) {
                 try {
                     input.close();
                 } catch (Exception e) {
-                    System.out.print("");
+                    e.printStackTrace();
                 }
             }
         }
@@ -178,28 +187,33 @@ public class FileUtil {
         FileOutputStream output = null;
         File file = new File(fileName);
         if (file.exists()) {
-            if (file.isDirectory())
+            if (file.isDirectory()) {
                 throw new IOException("File '" + file + "' exists but is a directory");
-            if (!file.canWrite())
+            }
+            if (!file.canWrite()) {
                 throw new IOException("File '" + file + "' cannot be written to");
+            }
         } else {
             File parent = file.getParentFile();
-            if (parent != null && !parent.exists() && !parent.mkdirs())
+            if (parent != null && !parent.exists() && !parent.mkdirs()) {
                 throw new IOException("File '" + file + "' could not be created");
+            }
         }
         try {
             output = new FileOutputStream(file);
-            if (data != null)
-                if (encode == null)
+            if (data != null) {
+                if (encode == null) {
                     output.write(data.getBytes());
-                else
+                } else {
                     output.write(data.getBytes(encode));
+                }
+            }
         } finally {
             if (null != output) {
                 try {
                     output.close();
                 } catch (IOException e) {
-                    System.out.print("");
+                    e.printStackTrace();
                 }
             }
         }
