@@ -14,7 +14,7 @@ By github.com/zxiaofan(https://github.com/zxiaofan/JavaUtils)
 **2、CSharpToJavaModelUtils**  
 　　C#的实体类转为Java实体类（Bean）。  
 **3、JsonToJavaBean**  
-　　json转JavaBean，支持CheckStyle和自定义转换规则。  
+　　json转JavaBean，支持CheckStyle和自定义转换规则，支持属性大小写兼容。  
 **4、BeanUtils**  
 　　java实体工具类：  
 　　4.1、针对源实体或目标实体分 5种copy级别。coverLevel覆盖级别： 1:source_field != null; 2:source_field != null (&&

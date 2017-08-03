@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,9 +38,11 @@ import com.google.gson.JsonSyntaxException;
  * 
  * 功能：读取Json文件并在outputPath目录生成相应的JavaBean文件，直接Copy使用，注释可选(直过CheckStyle)。
  * 
+ * 支持属性大小写、支持属性大小写同时兼容（Gson2.4级以上）
+ * 
  * 持续更新地址：https://github.com/zxiaofan/JavaUtils
  * 
- * Note:暂不支持多线程并发.
+ * Note:暂不支持多线程并发；将待转换json存入D:\\json.txt"，main函数直接运行即可.
  * 
  * @author zxiaofan
  */
@@ -62,9 +65,9 @@ public class JsonToJavaBean {
     private static String beanRootName = "Root";
 
     /**
-     * 是否为字段添加@SerializedName("Upper")注解，字段大写（默认false）.
+     * 是否为字段添加@SerializedName("")注解：1、属性小写（默认）；2、属性大写(value = "AddName")；3、大小写兼容(value = "addName", alternate = {"AddName"}).
      */
-    private static boolean serializedNameUpper = false;
+    private static Integer serializedName = 1;
 
     /**
      * 是否替换get、Set方法的字段中的特殊字符（默认开启）.
@@ -211,8 +214,13 @@ public class JsonToJavaBean {
                     builder.append(vo.getFieldDesc());
                     builder.append(desc2);
                 }
-                if (serializedNameUpper) {
+                if (Objects.equals(2, serializedName)) {
                     builder.append("@SerializedName(\"").append(vo.getFieldNameUpper()).append("\")").append(rn);
+                    builder.append(tab);
+                } else if (Objects.equals(3, serializedName)) {
+                    // @SerializedName(value = "addName", alternate = {"AddName"})
+                    builder.append("@SerializedName(value = \"").append(vo.getFieldNameLower()).append("\", ");
+                    builder.append("alternate = {\"").append(vo.getFieldNameUpper()).append("\"})").append(rn);
                     builder.append(tab);
                 }
                 builder.append("private ").append(vo.getFieldType()).append(" ").append(vo.getFieldNameLower()).append(";").append(rn);
@@ -233,7 +241,7 @@ public class JsonToJavaBean {
                     hasImport = true;
                 }
             }
-            if (serializedNameUpper) {
+            if (!Objects.equals(1, serializedName)) {
                 if (hasImport) {
                     listJar[5] = rn;
                 }
@@ -305,8 +313,6 @@ public class JsonToJavaBean {
     /**
      * 格式化Bean中字段值.
      * 
-     * @param fieldVos
-     *            fieldVos
      */
     private static void formatBean() {
         for (List<Bean> fieldVos : fields.values()) {
@@ -401,6 +407,8 @@ public class JsonToJavaBean {
      * 
      * @param json
      *            josn
+     * @param type
+     *            type
      * @return Object
      */
     private static Object fromJson(String json, Class type) {
@@ -416,8 +424,15 @@ public class JsonToJavaBean {
     }
 
     /**
-     * 构建特殊匹配规则.
+     * 构建并特殊匹配规则.
      * 
+     * @param fieldName
+     *            属性名
+     * @param fieldType
+     *            属性类型
+     * @param listRule
+     *            规则列表
+     * @return 特殊属性
      */
     private static String matchRule(String fieldName, String fieldType, List<String[]> listRule) {
         if (!ismachRule) {
@@ -505,6 +520,7 @@ public class JsonToJavaBean {
      * @param matchRule
      *            自定义规则
      * @param listRule
+     *            规则列表
      */
     public static void buildRule(String matchRule, List<String[]> listRule) {
         if (matchRule.length() != 0 && listRule.isEmpty()) {
@@ -515,11 +531,19 @@ public class JsonToJavaBean {
         }
     }
 
-    private static String readTextFile(String sFileName, String sEncode) {
-        StringBuffer sbStr = new StringBuffer();
-        try {
-            File ff = new File(sFileName);
-            InputStreamReader read = new InputStreamReader(new FileInputStream(ff), sEncode);
+    /**
+     * 文件读取.
+     * 
+     * @param fileName
+     *            文件名
+     * @param sencode
+     *            编码格式
+     * @return 文本
+     */
+    private static String readTextFile(String fileName, String sencode) {
+        StringBuilder sbStr = new StringBuilder();
+        File ff = new File(fileName);
+        try (FileInputStream fileInputStream = new FileInputStream(ff); InputStreamReader read = new InputStreamReader(fileInputStream, sencode);) {
             BufferedReader ins = new BufferedReader(read);
             String dataLine = "";
             while (null != (dataLine = ins.readLine())) {
@@ -536,13 +560,13 @@ public class JsonToJavaBean {
     /**
      * 新建文件（夹）.
      * 
-     * @param path
+     * @param pathT
      *            路径
      */
-    private static void createFile(String path) {
-        File file = new File(path);
+    private static void createFile(String pathT) {
+        File file = new File(pathT);
         if (!file.exists()) {
-            if (path.contains(".")) {
+            if (pathT.contains(".")) {
                 try {
                     file.createNewFile();
                 } catch (IOException e) {
@@ -550,7 +574,7 @@ public class JsonToJavaBean {
                 }
             } else {
                 // 递归创建文件夹，保证该路径所有文件夹都被创建
-                createFile(path.substring(0, path.lastIndexOf("\\")));
+                createFile(pathT.substring(0, pathT.lastIndexOf("\\")));
                 file.mkdir();
             }
         }
@@ -605,7 +629,7 @@ public class JsonToJavaBean {
         return result;
     }
 
-    private static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss");
+    private static SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmss");
 
     private static String typeString = "typeString";
 
@@ -644,16 +668,36 @@ public class JsonToJavaBean {
     private static String importSerializedNameUpper = "import com.google.gson.annotations.SerializedName;\r\n";
 }
 
+/**
+ * @author yunhai
+ *
+ *         Bean实体类
+ */
 class Bean {
+    /**
+     * 原始属性名.
+     */
     private String fieldName;
 
-    private String fieldNameLower; // 小写开头
+    /**
+     * 属性名小写开头.
+     */
+    private String fieldNameLower;
 
-    private String fieldNameUpper; // 大写开头
+    /**
+     * 属性名大写开头.
+     */
+    private String fieldNameUpper;
 
-    private String fieldType; // 类型
+    /**
+     * 字段类型.
+     */
+    private String fieldType;
 
-    private String fieldDesc; // 描述
+    /**
+     * 字段描述.
+     */
+    private String fieldDesc;
 
     /**
      * 设置fieldName.
