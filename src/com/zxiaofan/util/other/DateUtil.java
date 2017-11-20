@@ -8,12 +8,12 @@
  */
 package com.zxiaofan.util.other;
 
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
@@ -89,22 +89,7 @@ public class DateUtil {
     /**
      * 使用ThreadLocal保证SimpleDateFormat线程安全.
      */
-    private static ThreadLocal<DateFormat> threadLocal = new ThreadLocal<DateFormat>() {
-        @Override
-        protected DateFormat initialValue() {
-            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        }
-    };
-
-    /**
-     * 使用ThreadLocal保证SimpleDateFormat线程安全.
-     */
-    private static ThreadLocal<DateFormat> threadLocalYMd = new ThreadLocal<DateFormat>() {
-        @Override
-        protected DateFormat initialValue() {
-            return new SimpleDateFormat("yyyy-MM-dd");
-        }
-    };
+    private static ThreadLocal<Map<String, SimpleDateFormat>> threadLocalDateFormat = new ThreadLocal<>();
 
     /**
      * 初始化DateFormat标志位.
@@ -127,7 +112,7 @@ public class DateUtil {
      * @return time
      */
     public static String format(Date date) {
-        return threadLocal.get().format(date);
+        return getDateFormat(ENUM_FORMAT).format(date);
     }
 
     /**
@@ -138,7 +123,7 @@ public class DateUtil {
      * @return time
      */
     public static String formatYMd(Date date) {
-        return threadLocalYMd.get().format(date);
+        return getDateFormat(ENUM_FORMAT_YMD).format(date);
     }
 
     /**
@@ -154,8 +139,7 @@ public class DateUtil {
         if (null == date) {
             return null;
         }
-        DateFormat df = new SimpleDateFormat(dateFormat);
-        return df.format(date);
+        return getDateFormat(dateFormat).format(date);
     }
 
     /**
@@ -168,7 +152,7 @@ public class DateUtil {
      *             ParseException
      */
     public static Date parse(String source) throws ParseException {
-        return threadLocal.get().parse(source);
+        return getDateFormat(ENUM_FORMAT).parse(source);
     }
 
     /**
@@ -181,7 +165,7 @@ public class DateUtil {
      *             ParseException
      */
     public static Date parseYMd(String source) throws ParseException {
-        return threadLocalYMd.get().parse(source);
+        return getDateFormat(ENUM_FORMAT_YMD).parse(source);
     }
 
     /**
@@ -199,9 +183,29 @@ public class DateUtil {
         if (isNullOrEmpty(time) || isNullOrEmpty(dateFormat)) {
             return null;
         }
-        DateFormat df = new SimpleDateFormat(dateFormat);
-        Date date = df.parse(time);
-        return date;
+        return getDateFormat(dateFormat).parse(time);
+    }
+
+    /**
+     * 获取指定时间格式的 SimpleDateFormat.
+     *
+     * @param pattern
+     *            时间格式
+     * 
+     * @return SimpleDateFormat
+     */
+    private static SimpleDateFormat getDateFormat(String pattern) {
+        Map<String, SimpleDateFormat> dateFormatMap = threadLocalDateFormat.get();
+        if (dateFormatMap == null) {
+            dateFormatMap = new HashMap<>();
+        }
+        SimpleDateFormat simpleDateFormat = dateFormatMap.get(pattern);
+        if (simpleDateFormat == null) {
+            simpleDateFormat = new SimpleDateFormat(pattern, Locale.getDefault());
+            dateFormatMap.put(pattern, simpleDateFormat);
+            threadLocalDateFormat.set(dateFormatMap);
+        }
+        return simpleDateFormat;
     }
 
     /**
@@ -436,8 +440,7 @@ public class DateUtil {
         } else if (time.matches("\\d{1,2}")) {
             timeBuf.append(":00:00.0");
         }
-        date = parse(timeBuf.toString(), ENUM_FORMAT_YMDS);
-        return date;
+        return parse(timeBuf.toString(), ENUM_FORMAT_YMDS);
     }
 
     /**
@@ -474,7 +477,6 @@ public class DateUtil {
      * 
      */
     public static void clearThreadLocal() {
-        threadLocal.remove();
-        threadLocalYMd.remove();
+        threadLocalDateFormat.remove();
     }
 }
